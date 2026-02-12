@@ -1,0 +1,9 @@
+{
+  "name": "TripFlux",
+  "description": "Dynamic AI-powered travel planning for Android, iOS, and Web. Generate instant itineraries and explore the world with real-time intelligence.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone",
+    "geolocation"
+  ]
+}
