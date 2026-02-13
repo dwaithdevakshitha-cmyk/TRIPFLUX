@@ -39,31 +39,42 @@ const TourDetails: React.FC<TourDetailsProps> = ({ tour, onBack }) => {
                         <div className="h-1 flex-1 bg-slate-100 rounded-full"></div>
                     </div>
 
-                    <div className="space-y-12 relative before:absolute before:inset-0 before:ml-4 before:-z-10 before:w-0.5 before:bg-slate-100">
-                        {tour.itinerary?.map((day, i) => (
-                            <div key={i} className="relative pl-12">
-                                <div className="absolute left-0 top-0 w-8 h-8 bg-[#0c2d3a] rounded-lg flex items-center justify-center text-[10px] font-black text-white shadow-xl shadow-indigo-600/20 ring-4 ring-white">
-                                    {day.day}
-                                </div>
-                                <div className="space-y-6">
-                                    <h3 className="text-xl font-bold text-slate-800">{day.title}</h3>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        {day.activities?.map((act, j) => (
-                                            <div key={j} className="bg-slate-50/80 p-5 rounded-2xl border border-slate-100 transition-all hover:bg-white hover:shadow-xl hover:shadow-slate-200/50 group">
-                                                {act.image && (
-                                                    <div className="aspect-video rounded-xl overflow-hidden mb-4 border border-slate-200">
-                                                        <img src={act.image} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" alt={act.activity} />
+                    <div className="space-y-16 relative before:absolute before:inset-0 before:ml-5 before:-z-10 before:w-1 before:bg-slate-100/50">
+                        {tour.itinerary?.map((day, i) => {
+                            return (
+                                <div key={i} className="relative pl-16 animate-in slide-in-from-left-4 duration-500" style={{ animationDelay: `${i * 100}ms` }}>
+                                    {/* Day Marker */}
+                                    <div className="absolute left-0 top-0 w-10 h-10 bg-indigo-600 rounded-2xl flex items-center justify-center text-xs font-black text-white shadow-2xl shadow-indigo-200 ring-8 ring-white z-10">
+                                        {day.day}
+                                    </div>
+
+                                    {/* Day Card */}
+                                    <div className="bg-white rounded-[32px] border border-slate-100 shadow-xl shadow-slate-200/40 overflow-hidden hover:shadow-2xl hover:shadow-slate-200/60 transition-all duration-500 group">
+                                        <div className="p-8 w-full">
+                                            <h3 className="text-xl font-extrabold text-[#0c2d3a] mb-6 flex items-center gap-3">
+                                                {day.title}
+                                                <span className="h-1 w-8 bg-indigo-600 rounded-full"></span>
+                                            </h3>
+
+                                            <div className="space-y-4">
+                                                {day.activities?.map((act, j) => (
+                                                    <div key={j} className="flex gap-4 items-start last:border-0 border-b border-slate-50 pb-4 last:pb-0">
+                                                        <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-indigo-400 flex-shrink-0"></div>
+                                                        <div className="space-y-1">
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="text-[10px] font-black text-indigo-500 uppercase tracking-wider">{act.time}</span>
+                                                                <h4 className="text-[14px] font-bold text-slate-800">{act.activity}</h4>
+                                                            </div>
+                                                            <p className="text-[12px] text-slate-500 leading-relaxed font-medium">{act.description}</p>
+                                                        </div>
                                                     </div>
-                                                )}
-                                                <span className="text-[9px] font-black text-indigo-600 uppercase tracking-widest block mb-1">{act.time}</span>
-                                                <h4 className="text-[13px] font-bold text-slate-900 mb-1">{act.activity}</h4>
-                                                <p className="text-[11px] text-slate-500 font-medium leading-relaxed">{act.description}</p>
+                                                ))}
                                             </div>
-                                        ))}
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 </div>
 

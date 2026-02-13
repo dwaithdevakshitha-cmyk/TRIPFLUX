@@ -67,17 +67,29 @@ const AboutUs: React.FC = () => {
                     </div>
                 </section>
 
+                {/* Stats Section */}
+                <section className="py-16 px-6 bg-[#0c2d3a] rounded-[40px] text-white">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-12">
+                        {[
+                            { label: 'Global Destinations', value: '50+' },
+                            { label: 'Happy Travelers', value: '12,000+' },
+                            { label: 'AI Optimized Routes', value: '1,500+' },
+                            { label: 'Expert Local Guides', value: '200+' }
+                        ].map((stat, i) => (
+                            <div key={i} className="space-y-2">
+                                <p className="text-4xl font-black tracking-tighter text-indigo-400">{stat.value}</p>
+                                <p className="text-[10px] font-bold text-white/40 uppercase tracking-[0.2em]">{stat.label}</p>
+                            </div>
+                        ))}
+                    </div>
+                </section>
+
                 {/* Thank You Section */}
                 <section className="space-y-8">
                     <h2 className="text-[12px] font-black text-slate-900 uppercase tracking-[0.4em]">Thank You</h2>
                     <p className="text-[11px] text-slate-500 leading-relaxed max-w-xl mx-auto font-medium">
                         For your continued support and the confidence that you, the traveler, have placed in us. We recognize that our success is a reflection of your trust. We remain dedicated to serving you with unparalleled passion and technological precision.
                     </p>
-                    <div className="flex justify-center opacity-30 pt-12">
-                        <div className="w-full max-w-md h-48 bg-slate-100 rounded-2xl flex items-center justify-center">
-                            <p className="text-[10px] font-black uppercase tracking-[0.5em]">Global TripFlux Network</p>
-                        </div>
-                    </div>
                 </section>
 
             </div>
