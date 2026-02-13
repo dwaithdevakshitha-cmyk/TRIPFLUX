@@ -1411,7 +1411,7 @@ const DEFAULT_TOURS: TourPackage[] = [
       {
         day: 4, title: 'Ganga Bath & Departure', activities: [
           { time: 'Morning', activity: 'Main Darshan', description: 'Holy bath in Ganga River and Visit Kashi Viswanath temple, Annapurna Devi Temple and Vishalakshi temple.' },
-          { time: 'Afternoon', activity: 'Departure', description: 'Final lunch and drop at Varanasi Airport/Railway station for return journey.', image: '/assets/images/train.jpg' }
+          { time: 'Afternoon', activity: 'Departure', description: 'Final lunch and drop at Varanasi Airport/Railway station for return journey.', image: '/assets/images/train_fast_2.jpg' }
         ]
       }
     ]
@@ -1431,7 +1431,7 @@ const DEFAULT_TOURS: TourPackage[] = [
     itinerary: [
       {
         day: 1, title: 'Arrival & Guruvayur', activities: [
-          { time: 'Morning', activity: 'Arrival Cochin', description: 'Arrival at Cochin Airport/Railway station and proceed to Guruvayur.', image: '/assets/images/train.jpg' },
+          { time: 'Morning', activity: 'Arrival Cochin', description: 'Arrival at Cochin Airport/Railway station and proceed to Guruvayur.', image: '/assets/images/train_fast_2.jpg' },
           { time: 'Evening', activity: 'Temple Visit', description: 'Visit the sacred Guruvayur temple.' }
         ]
       },
@@ -1740,7 +1740,7 @@ const DEFAULT_TOURS: TourPackage[] = [
     itinerary: [
       {
         day: 1, title: 'Arrival Delhi & Akshardham', activities: [
-          { time: 'Morning', activity: 'Delhi Arrival', description: 'Pickup at Delhi airport/Railway station and transfer to hotel.', image: '/assets/images/train.jpg' },
+          { time: 'Morning', activity: 'Delhi Arrival', description: 'Pickup at Delhi airport/Railway station and transfer to hotel.', image: '/assets/images/train_fast_2.jpg' },
           { time: 'Evening', activity: 'Akshardham Visit', description: 'Visit the magnificent Akshardham temple. Overnight stay at Delhi.' }
         ]
       },
@@ -1811,7 +1811,7 @@ const DEFAULT_TOURS: TourPackage[] = [
       },
       {
         day: 14, title: 'Delhi Departure', activities: [
-          { time: 'Morning', activity: 'Transfer', description: 'Check out from hotel and drop at Airport/Railway station for departure.', image: '/assets/images/train.jpg' }
+          { time: 'Morning', activity: 'Transfer', description: 'Check out from hotel and drop at Airport/Railway station for departure.', image: '/assets/images/train_fast_2.jpg' }
         ]
       }
     ]
@@ -1830,16 +1830,16 @@ const App: React.FC = () => {
   const [isToursLoading, setIsToursLoading] = useState(true);
   const [activeHero, setActiveHero] = useState(0);
   const heroImages = [
+    '/assets/images/wing-plane-left.jpg',
     '/assets/images/train_fast_2.jpg',
-    '/assets/images/train_coal_fuel.avif',
-    '/assets/images/flight_window.jpg',
-    '/assets/images/wing-plane-left.jpg'
+    '/assets/images/coal_train2.jpg',
+    '/assets/images/flight_window.jpg'
   ];
 
   useEffect(() => {
     const timer = setInterval(() => {
       setActiveHero((prev) => (prev + 1) % heroImages.length);
-    }, 2000); // 2 seconds flash interval
+    }, 1500); // Faster interval
     return () => clearInterval(timer);
   }, [heroImages.length]);
 
@@ -1895,7 +1895,7 @@ const App: React.FC = () => {
           <img
             key={idx}
             src={img}
-            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ease-in-out ${activeHero === idx ? 'opacity-100' : 'opacity-0'}`}
+            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ease-in-out ${activeHero === idx ? 'opacity-100' : 'opacity-0'}`}
             alt="Hero Background"
           />
         ))}
@@ -1904,7 +1904,7 @@ const App: React.FC = () => {
         <div className="absolute inset-0 bg-gradient-to-t from-[#0c2d3a] via-[#0c2d3a]/20 to-transparent flex flex-col justify-center items-center text-center px-6">
           <div className="max-w-4xl space-y-6">
             <span className="text-indigo-400 font-extrabold text-[10px] uppercase tracking-[0.5em] mb-4 block animate-in slide-in-from-top-4 duration-700">EXPERIENCE THE EXTRAORDINARY</span>
-            <h1 className="text-5xl md:text-8xl font-black text-white tracking-tighter uppercase leading-[0.9] animate-in slide-in-from-bottom-8 duration-1000">
+            <h1 className="text-2xl md:text-4xl font-black text-white tracking-tighter uppercase leading-[0.9] animate-in slide-in-from-bottom-8 duration-1000">
               Your Journey, <br /> Our Intelligence
             </h1>
             <p className="text-white/80 text-sm md:text-lg font-medium max-w-2xl mx-auto animate-in fade-in slide-in-from-bottom-12 duration-1200 delay-300">
