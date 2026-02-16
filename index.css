@@ -1,3 +1,5 @@
+@import "tailwindcss";
+
 @keyframes slow-zoom {
   0% {
     transform: scale(1);

@@ -13,7 +13,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onAddTour, onClose }) =
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isFinalizing, setIsFinalizing] = useState(false);
   const [currentProcessingIndex, setCurrentProcessingIndex] = useState<number | null>(null);
-  
+
   const [bulkTours, setBulkTours] = useState<Partial<TourPackage>[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -53,11 +53,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onAddTour, onClose }) =
       for (let i = 0; i < bulkTours.length; i++) {
         setCurrentProcessingIndex(i);
         const tour = bulkTours[i];
-        
+
         // 1. Generate Day-wise Itinerary
         const itinerary = await generateItineraryForPackage(
-          tour.title || '', 
-          tour.destination || '', 
+          tour.title || '',
+          tour.destination || '',
           tour.duration || '3 days'
         );
 
@@ -102,13 +102,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onAddTour, onClose }) =
         <div>
           <h2 className="text-4xl font-black text-slate-900 tracking-tight uppercase leading-none">Management Center</h2>
           <div className="flex gap-4 mt-4">
-            <button 
+            <button
               onClick={() => setActiveTab('sync')}
               className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'sync' ? 'bg-slate-900 text-white shadow-xl shadow-slate-200' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
             >
               Bulk Package Sync
             </button>
-            <button 
+            <button
               onClick={() => setActiveTab('deploy')}
               className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'deploy' ? 'bg-indigo-600 text-white shadow-xl shadow-indigo-100' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
             >
@@ -134,9 +134,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onAddTour, onClose }) =
                     Upload a PDF or Image brochure. Our AI will extract individual tours row-by-row for your review before publishing.
                   </p>
                 </div>
-                
+
                 <div className="flex-1 w-full">
-                  <div 
+                  <div
                     className={`relative group border-4 border-dashed rounded-[40px] transition-all flex flex-col items-center justify-center p-12 cursor-pointer ${isAnalyzing ? 'bg-slate-50 border-slate-200 cursor-not-allowed' : 'bg-slate-50 border-indigo-100 hover:border-indigo-600 hover:bg-indigo-50/30'}`}
                     onClick={() => !isAnalyzing && !isFinalizing && fileInputRef.current?.click()}
                   >
@@ -184,15 +184,15 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onAddTour, onClose }) =
                     {bulkTours.map((tour, idx) => (
                       <tr key={tour.id || idx} className={`group ${currentProcessingIndex === idx ? 'bg-indigo-50/50' : 'hover:bg-slate-50/50'}`}>
                         <td className="py-4 px-2">
-                          <input 
-                            value={tour.title || ''} 
+                          <input
+                            value={tour.title || ''}
                             onChange={(e) => handleUpdateField(idx, 'title', e.target.value)}
                             className="w-full bg-transparent border-none outline-none font-bold text-slate-900 focus:text-indigo-600 transition-colors"
                           />
                         </td>
                         <td className="py-4 px-2">
-                          <select 
-                            value={tour.category} 
+                          <select
+                            value={tour.category}
                             onChange={(e) => handleUpdateField(idx, 'category', e.target.value)}
                             className="bg-transparent border-none outline-none font-bold text-slate-500 text-xs"
                           >
@@ -200,22 +200,22 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onAddTour, onClose }) =
                           </select>
                         </td>
                         <td className="py-4 px-2">
-                          <input 
-                            value={tour.destination || ''} 
+                          <input
+                            value={tour.destination || ''}
                             onChange={(e) => handleUpdateField(idx, 'destination', e.target.value)}
                             className="w-full bg-transparent border-none outline-none font-bold text-slate-600 text-xs"
                           />
                         </td>
                         <td className="py-4 px-2">
-                          <input 
-                            value={tour.price || ''} 
+                          <input
+                            value={tour.price || ''}
                             onChange={(e) => handleUpdateField(idx, 'price', e.target.value)}
                             className="w-full bg-transparent border-none outline-none font-black text-indigo-600"
                           />
                         </td>
                         <td className="py-4 px-2">
-                          <select 
-                            value={tour.priceBasis} 
+                          <select
+                            value={tour.priceBasis}
                             onChange={(e) => handleUpdateField(idx, 'priceBasis', e.target.value)}
                             className="bg-transparent border-none outline-none font-bold text-slate-500 text-xs"
                           >
@@ -223,8 +223,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onAddTour, onClose }) =
                           </select>
                         </td>
                         <td className="py-4 px-2">
-                          <input 
-                            value={tour.duration || ''} 
+                          <input
+                            value={tour.duration || ''}
                             onChange={(e) => handleUpdateField(idx, 'duration', e.target.value)}
                             className="w-full bg-transparent border-none outline-none font-bold text-slate-600 text-xs"
                           />
@@ -255,7 +255,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onAddTour, onClose }) =
                   </div>
                 </div>
 
-                <button 
+                <button
                   onClick={finalizeBulkPublish}
                   disabled={isFinalizing}
                   className="px-12 py-5 bg-indigo-600 text-white font-black rounded-2xl hover:bg-indigo-500 hover:scale-105 transition-all shadow-2xl shadow-indigo-500/30 disabled:opacity-50 flex items-center gap-4"
@@ -298,12 +298,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onAddTour, onClose }) =
             </div>
 
             <div className="lg:col-span-2 bg-slate-900 rounded-[50px] p-10 md:p-14 text-white relative overflow-hidden shadow-2xl border border-slate-800">
-               <h3 className="text-3xl font-black mb-10 flex items-center gap-3">Cloud Hosting Protocol</h3>
-               <div className="space-y-10 font-mono text-xs">
-                 <div className="p-6 bg-black rounded-2xl border border-white/10 text-indigo-400">npm install -g firebase-tools</div>
-                 <div className="p-6 bg-black rounded-2xl border border-white/10 text-indigo-400">firebase login</div>
-                 <div className="p-6 bg-indigo-900/30 rounded-2xl border border-indigo-500/50 text-white animate-pulse">firebase deploy --only hosting</div>
-               </div>
+              <h3 className="text-3xl font-black mb-10 flex items-center gap-3">Cloud Hosting Protocol</h3>
+              <div className="space-y-10 font-mono text-xs">
+                <div className="p-6 bg-black rounded-2xl border border-white/10 text-indigo-400">npm install -g firebase-tools</div>
+                <div className="p-6 bg-black rounded-2xl border border-white/10 text-indigo-400">firebase login</div>
+                <div className="p-6 bg-indigo-900/30 rounded-2xl border border-indigo-500/50 text-white animate-pulse">firebase deploy --only hosting</div>
+              </div>
             </div>
           </div>
         </div>

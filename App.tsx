@@ -11,7 +11,7 @@ import TourCard from './components/TourCard';
 import { AppStatus, TourPackage, User } from './types';
 import { dbService } from './services/dbService';
 
-type ViewType = 'HOME' | 'INTERNATIONAL' | 'DOMESTIC' | 'PILGRIMAGE' | 'ABOUT' | 'CONTACT' | 'TOUR_DETAILS';
+type ViewType = 'HOME' | 'INTERNATIONAL' | 'DOMESTIC' | 'PILGRIMAGE' | 'ABOUT' | 'CONTACT' | 'TOUR_DETAILS' | 'SIGNUP';
 
 // Added missing highlights property to all objects in DEFAULT_TOURS to satisfy the TourPackage interface
 const DEFAULT_TOURS: TourPackage[] = [
@@ -1820,11 +1820,52 @@ const DEFAULT_TOURS: TourPackage[] = [
 ];
 
 import TourDetails from './components/TourDetails';
+import SignUp from './components/SignUp';
 
 const App: React.FC = () => {
   const [status, setStatus] = useState<AppStatus>(AppStatus.IDLE);
-  const [currentView, setCurrentView] = useState<ViewType>('HOME');
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(() => {
+    try {
+      const saved = localStorage.getItem('tripflux_user');
+      return saved ? JSON.parse(saved) : null;
+    } catch (e) {
+      return null;
+    }
+  });
+  const [currentView, setCurrentView] = useState<ViewType>(() => {
+    try {
+      const saved = localStorage.getItem('tripflux_user');
+      return saved ? 'HOME' : 'SIGNUP';
+    } catch (e) {
+      return 'SIGNUP';
+    }
+  });
+
+  // Persist user session
+  useEffect(() => {
+    if (user) {
+      localStorage.setItem('tripflux_user', JSON.stringify(user));
+    } else {
+      localStorage.removeItem('tripflux_user');
+    }
+  }, [user]);
+
+  // Enforce Sign Up before accessing any content
+  useEffect(() => {
+    // If no user and not on white-listed pages, force SIGNUP
+    if (!user &&
+      currentView !== 'SIGNUP' &&
+      status !== AppStatus.ADMIN &&
+      status !== AppStatus.ADMIN_LOGIN) {
+      setCurrentView('SIGNUP');
+    }
+
+    // Safety: If user exists and we are still on SIGNUP, go HOME
+    if (user && currentView === 'SIGNUP') {
+      setCurrentView('HOME');
+    }
+  }, [user, currentView, status]);
+
   const [signatureTours, setSignatureTours] = useState<TourPackage[]>([]);
   const [selectedTour, setSelectedTour] = useState<TourPackage | null>(null);
   const [isToursLoading, setIsToursLoading] = useState(true);
@@ -1856,6 +1897,7 @@ const App: React.FC = () => {
   // Defined handleAuthSuccess to update the user state and fix the reference error
   const handleAuthSuccess = (user: User) => {
     setUser(user);
+    setCurrentView('HOME'); // Redirect to home after successful auth
   };
 
   useEffect(() => {
@@ -2025,8 +2067,8 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-white font-sans">
-      {/* Top Banner and Header - Hidden on Tour Details for Full Screen effect */}
-      {currentView !== 'TOUR_DETAILS' && (
+      {/* Top Banner and Header - Hidden on SIGNIFICANT pages or if not logged in */}
+      {currentView !== 'TOUR_DETAILS' && currentView !== 'SIGNUP' && (
         <>
           <div className="bg-[#0c2d3a] text-white py-1.5 px-6 flex justify-center items-center text-[10px] font-bold border-b border-white/5 space-x-4">
             <span className="opacity-80">== WELCOME TO TRIPFLUX ==</span>
@@ -2035,8 +2077,8 @@ const App: React.FC = () => {
 
           <Header
             user={user}
-            onLogout={() => setUser(null)}
-            onSignIn={() => { }}
+            onLogout={() => { setUser(null); setCurrentView('SIGNUP'); }}
+            onSignUp={() => { setCurrentView('SIGNUP'); window.scrollTo(0, 0); }}
             onViewChange={(view) => { setCurrentView(view); window.scrollTo(0, 0); }}
             onAdminClick={() => { window.location.hash = 'admin'; setStatus(AppStatus.ADMIN_LOGIN); }}
             currentView={currentView}
@@ -2049,7 +2091,9 @@ const App: React.FC = () => {
       ) : status === AppStatus.ADMIN ? (
         <AdminDashboard onAddTour={async (t) => { await dbService.saveTour(t); setSignatureTours([t, ...signatureTours]); }} onClose={() => { window.location.hash = ''; setStatus(AppStatus.IDLE); }} />
       ) : (
-        currentView === 'TOUR_DETAILS' && selectedTour ? (
+        currentView === 'SIGNUP' ? (
+          <SignUp onBack={() => { }} onSuccess={(user) => { setUser(user); setCurrentView('HOME'); }} />
+        ) : currentView === 'TOUR_DETAILS' && selectedTour ? (
           <TourDetails tour={selectedTour} onBack={() => setCurrentView('INTERNATIONAL')} />
         ) : (
           <main className="min-h-screen bg-white">
