@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<customers>
+
+  <customer>
+    <id>1771214525865</id>
+    <name>Test User</name>
+    <email>test@tripflux.ai</email>
+    <password>TestPass123!</password>
+    <provider>direct</provider>
+    <timestamp>2026-02-16T09:35:00Z</timestamp>
+  </customer>
+
+  <customer>
+    <id>1771214810597</id>
+    <name>Anonymous</name>
+    <email>akshitha17.t@gmail.com</email>
+    <password>akshitha@17</password>
+    <provider>direct</provider>
+    <timestamp>2026-02-16T04:06:50.583Z</timestamp>
+  </customer>
+
+  <customer>
+    <id>1771215255017</id>
+    <name>gayathri</name>
+    <email>gayathri@gmail.com</email>
+    <password>gayathri@1</password>
+    <provider>direct</provider>
+    <timestamp>2026-02-16T04:14:15.017Z</timestamp>
+  </customer>
+
+  <customer>
+    <id>1771215287482</id>
+    <name>priya</name>
+    <email>priya@gmail.com</email>
+    <password>priya@1</password>
+    <provider>direct</provider>
+    <timestamp>2026-02-16T04:14:47.482Z</timestamp>
+  </customer>
+
+  <customer>
+    <id>1771216417836</id>
+    <name>kiran</name>
+    <email>kiran@gmail.com</email>
+    <password>Kiran@1</password>
+    <provider>direct</provider>
+    <timestamp>2026-02-16T04:33:37.836Z</timestamp>
+  </customer>
+</customers>
