@@ -3,15 +3,16 @@ import React from 'react';
 import { User } from '../types';
 
 interface HeaderProps {
-  onSignUp: () => void;
+  onSignIn: () => void;
   onAdminClick: () => void;
+  onAssociateLogin: () => void;
   user: User | null;
   onLogout: () => void;
   onViewChange: (view: 'HOME' | 'INTERNATIONAL' | 'DOMESTIC' | 'PILGRIMAGE' | 'ABOUT' | 'CONTACT' | 'SIGNUP') => void;
   currentView: 'HOME' | 'INTERNATIONAL' | 'DOMESTIC' | 'PILGRIMAGE' | 'ABOUT' | 'CONTACT' | 'SIGNUP';
 }
 
-const Header: React.FC<HeaderProps> = ({ onSignUp, onAdminClick, user, onLogout, onViewChange, currentView }) => {
+const Header: React.FC<HeaderProps> = ({ onSignIn, onAdminClick, onAssociateLogin, user, onLogout, onViewChange, currentView }) => {
   return (
     <header className="sticky top-0 z-50 bg-[#0c2d3a] border-b border-white/10 shadow-lg">
       <div className="max-w-7xl mx-auto px-6 h-16 md:h-20 flex items-center justify-between">
@@ -44,15 +45,22 @@ const Header: React.FC<HeaderProps> = ({ onSignUp, onAdminClick, user, onLogout,
             </svg>
           </button>
           {user ? (
-            <div className="flex items-center gap-3">
-              <div className="text-right hidden sm:block">
-                <p className="text-[10px] font-black text-white uppercase tracking-tighter">{user.name}</p>
-                <button onClick={onLogout} className="text-[8px] font-bold text-indigo-400 uppercase tracking-widest hover:text-white">Logout</button>
+            <div className="flex items-center gap-4">
+              <div className="flex flex-col items-end hidden sm:flex">
+                <span className="text-white text-[10px] font-black tracking-widest uppercase">{user.name}</span>
+                <button onClick={onLogout} className="text-indigo-400 text-[9px] font-bold hover:text-indigo-300 tracking-widest uppercase">Logout</button>
               </div>
-              <img src={user.avatar} className="w-8 h-8 rounded-full border-2 border-indigo-500 shadow-lg" alt="User" />
+              <div className="w-10 h-10 rounded-full border border-white/20 overflow-hidden shadow-lg shadow-black/20">
+                <img src={user.avatar || `https://ui-avatars.com/api/?name=${user.name}&background=6366f1&color=fff`} alt={user.name} className="w-full h-full object-cover" />
+              </div>
             </div>
           ) : (
-            <button onClick={onSignUp} className="px-5 py-2.5 border border-white/20 text-white text-[10px] font-black uppercase tracking-widest rounded hover:bg-white hover:text-[#0c2d3a] transition-all">SIGN UP</button>
+            <button
+              onClick={onSignIn}
+              className="px-6 py-2.5 bg-indigo-600 border border-indigo-500 shadow-lg shadow-indigo-600/20 text-white text-[11px] font-black uppercase tracking-widest rounded hover:bg-indigo-500 transition-all active:scale-95"
+            >
+              SIGN UP
+            </button>
           )}
         </div>
       </div>

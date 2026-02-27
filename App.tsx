@@ -7,9 +7,13 @@ import AdminDashboard from './components/AdminDashboard';
 import AboutUs from './components/AboutUs';
 import ContactUs from './components/ContactUs';
 import AdminLogin from './components/AdminLogin';
+import AssociateLogin from './components/AssociateLogin';
 import TourCard from './components/TourCard';
 import { AppStatus, TourPackage, User } from './types';
 import { dbService } from './services/dbService';
+
+import SignupPage from './components/SignupPage';
+
 
 type ViewType = 'HOME' | 'INTERNATIONAL' | 'DOMESTIC' | 'PILGRIMAGE' | 'ABOUT' | 'CONTACT' | 'TOUR_DETAILS' | 'SIGNUP';
 
@@ -2078,9 +2082,10 @@ const App: React.FC = () => {
           <Header
             user={user}
             onLogout={() => { setUser(null); setCurrentView('SIGNUP'); }}
-            onSignUp={() => { setCurrentView('SIGNUP'); window.scrollTo(0, 0); }}
+            onSignIn={() => { setCurrentView('SIGNUP'); window.scrollTo(0, 0); }}
             onViewChange={(view) => { setCurrentView(view); window.scrollTo(0, 0); }}
             onAdminClick={() => { window.location.hash = 'admin'; setStatus(AppStatus.ADMIN_LOGIN); }}
+            onAssociateLogin={() => { setCurrentView('SIGNUP'); window.scrollTo(0, 0); }}
             currentView={currentView}
           />
         </>
@@ -2088,6 +2093,8 @@ const App: React.FC = () => {
 
       {status === AppStatus.ADMIN_LOGIN ? (
         <AdminLogin onSuccess={() => setStatus(AppStatus.ADMIN)} onCancel={() => setStatus(AppStatus.IDLE)} />
+      ) : status === AppStatus.ASSOCIATE_LOGIN ? (
+        <AssociateLogin onSuccess={() => setStatus(AppStatus.IDLE)} onCancel={() => setStatus(AppStatus.IDLE)} />
       ) : status === AppStatus.ADMIN ? (
         <AdminDashboard onAddTour={async (t) => { await dbService.saveTour(t); setSignatureTours([t, ...signatureTours]); }} onClose={() => { window.location.hash = ''; setStatus(AppStatus.IDLE); }} />
       ) : (
@@ -2103,6 +2110,7 @@ const App: React.FC = () => {
             {currentView === 'PILGRIMAGE' && renderCategoryPage('Temple Special Packages', getToursByCategory('Pilgrimage'))}
             {currentView === 'ABOUT' && <AboutUs />}
             {currentView === 'CONTACT' && <ContactUs />}
+            {currentView === 'SIGNUP' && <SignupPage onBack={() => setCurrentView('HOME')} onAuthSuccess={handleAuthSuccess} />}
 
             <footer className="bg-[#0c2d3a] text-white pt-16 pb-12 px-6 border-t border-white/5 mt-12">
               <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-12">
