@@ -1,310 +1,1128 @@
 
 import React, { useState, useRef } from 'react';
-import { TourPackage, MediaFile, ItineraryDay } from '../types';
-import { extractBulkToursFromMedia, generateItineraryForPackage, generateDestinationImage } from '../services/geminiService';
+import { TourPackage } from '../types';
+import { dbService } from '../services/dbService';
 
 interface AdminDashboardProps {
-  onAddTour: (tour: TourPackage) => Promise<void>;
   onClose: () => void;
+  onLogout?: () => void;
 }
 
-const AdminDashboard: React.FC<AdminDashboardProps> = ({ onAddTour, onClose }) => {
-  const [activeTab, setActiveTab] = useState<'sync' | 'deploy'>('sync');
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [isFinalizing, setIsFinalizing] = useState(false);
-  const [currentProcessingIndex, setCurrentProcessingIndex] = useState<number | null>(null);
+const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onLogout }) => {
+  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'associates' | 'packages' | 'bookings' | 'commissions' | 'payouts' | 'promocodes' | 'refunds' | 'commissionlevels'>('overview');
 
-  const [bulkTours, setBulkTours] = useState<Partial<TourPackage>[]>([]);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [usersList, setUsersList] = useState<any[]>([]);
+  const [userSearch, setUserSearch] = useState('');
 
-  const handleBulkUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const [associatesList, setAssociatesList] = useState<any[]>([]);
+  const [associateSearch, setAssociateSearch] = useState('');
+
+  const [packagesList, setPackagesList] = useState<any[]>([]);
+  const [packageSearch, setPackageSearch] = useState('');
+
+  const [bookingsList, setBookingsList] = useState<any[]>([]);
+  const [bookingSearch, setBookingSearch] = useState('');
+
+  const [commissionsList, setCommissionsList] = useState<any[]>([]);
+  const [commissionSearch, setCommissionSearch] = useState('');
+
+  const [payoutsList, setPayoutsList] = useState<any[]>([]);
+  const [payoutSearch, setPayoutSearch] = useState('');
+
+  const [promoCodesList, setPromoCodesList] = useState<any[]>([]);
+  const [promoCodeSearch, setPromoCodeSearch] = useState('');
+
+  const [refundsList, setRefundsList] = useState<any[]>([]);
+  const [refundSearch, setRefundSearch] = useState('');
+
+  const [commissionLevelsList, setCommissionLevelsList] = useState<any[]>([]);
+  const [showLevelModal, setShowLevelModal] = useState(false);
+  const [editingLevel, setEditingLevel] = useState<number | null>(null);
+  const [newLevelData, setNewLevelData] = useState({ level: '', percentage: '' });
+
+  const [stats, setStats] = useState({
+    totalUsers: 0,
+    totalAssociates: 0,
+    totalPackages: 0,
+    totalBookings: 0,
+    totalRevenue: 0,
+    pendingCommissions: 0
+  });
+
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [editingPackageId, setEditingPackageId] = useState<number | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [newPackage, setNewPackage] = useState({
+    name: '',
+    destination: '',
+    duration: '',
+    price: '',
+    description: '',
+    category: 'Domestic',
+    image: '',
+    location: '',
+    track: '',
+    status: 'active'
+  });
+
+  const [itineraryRows, setItineraryRows] = useState<{ day: number; activity: string; description: string }[]>([]);
+
+  const addItineraryRow = () => {
+    const nextDay = itineraryRows.length > 0 ? Math.max(...itineraryRows.map(r => r.day)) + 1 : 1;
+    setItineraryRows([...itineraryRows, { day: nextDay, activity: '', description: '' }]);
+  };
+
+  const removeItineraryRow = (index: number) => {
+    setItineraryRows(itineraryRows.filter((_, i) => i !== index));
+  };
+
+  const updateItineraryRow = (index: number, field: string, value: any) => {
+    const updated = [...itineraryRows];
+    updated[index] = { ...updated[index], [field]: value };
+    setItineraryRows(updated);
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
-
-    setIsAnalyzing(true);
-    try {
-      const base64 = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve((reader.result as string).split(',')[1]);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
-
-      const results = await extractBulkToursFromMedia(base64, file.type);
-      setBulkTours(results.map(r => ({ ...r, id: Math.random().toString(36).substr(2, 9) })));
-    } catch (err) {
-      console.error(err);
-      alert("Bulk analysis failed. Ensure the document is clear.");
-    } finally {
-      setIsAnalyzing(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setNewPackage({ ...newPackage, image: reader.result as string });
+      };
+      reader.readAsDataURL(file);
     }
   };
 
-  const handleUpdateField = (index: number, field: keyof TourPackage, value: any) => {
-    const updated = [...bulkTours];
-    updated[index] = { ...updated[index], [field]: value };
-    setBulkTours(updated);
+  React.useEffect(() => {
+    const fetchData = async () => {
+      try {
+        if (activeTab === 'overview') setStats(await dbService.getAdminStats());
+        if (activeTab === 'users') setUsersList(await dbService.getUsers());
+        if (activeTab === 'associates') setAssociatesList(await dbService.getAssociates());
+        if (activeTab === 'packages') setPackagesList(await dbService.getPackagesAdmin());
+        if (activeTab === 'bookings') setBookingsList(await dbService.getBookingsAdmin());
+        if (activeTab === 'commissions') setCommissionsList(await dbService.getCommissionsAdmin());
+        if (activeTab === 'payouts') setPayoutsList(await dbService.getPayoutsAdmin());
+        if (activeTab === 'promocodes') setPromoCodesList(await dbService.getPromoCodesAdmin());
+        if (activeTab === 'refunds') setRefundsList(await dbService.getRefundsAdmin());
+        if (activeTab === 'commissionlevels') setCommissionLevelsList(await dbService.getCommissionLevelsAdmin());
+      } catch (e) {
+        console.error("Fetch area error:", e);
+      }
+    };
+    fetchData();
+  }, [activeTab]);
+
+  const handleAddPackage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newPackage.name || !newPackage.destination || !newPackage.price || !newPackage.duration) {
+      alert("Please fill in all required fields.");
+      return;
+    }
+
+    const formattedItinerary: any[] = [];
+    const daysMap = new Map<number, any>();
+    
+    itineraryRows.forEach(row => {
+      if (!daysMap.has(row.day)) {
+        daysMap.set(row.day, { day: row.day, title: `Day ${row.day}`, activities: [] });
+      }
+      daysMap.get(row.day).activities.push({
+        time: '', // empty as requested to remove
+        activity: row.activity,
+        description: row.description
+      });
+    });
+    
+    const finalItinerary = Array.from(daysMap.values()).sort((a, b) => a.day - b.day);
+
+    setIsSaving(true);
+    try {
+      const packageData = { ...newPackage, itinerary: finalItinerary };
+      if (editingPackageId) {
+        await dbService.updatePackageAdmin({ ...packageData, package_id: editingPackageId });
+        alert("Package updated successfully!");
+      } else {
+        await dbService.createPackageAdmin(packageData);
+        alert("Package added successfully!");
+      }
+      
+      setShowAddModal(false);
+      setEditingPackageId(null);
+      setNewPackage({
+        name: '',
+        destination: '',
+        duration: '',
+        price: '',
+        description: '',
+        category: 'Domestic',
+        image: '',
+        location: '',
+        track: '',
+        status: 'active'
+      });
+      setItineraryRows([]);
+      setPackagesList(await dbService.getPackagesAdmin());
+    } catch (err) {
+      console.error("Failed to save package", err);
+      alert("Error saving package. Please try again.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const finalizeBulkPublish = async () => {
-    setIsFinalizing(true);
+  const handleLevelSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const l = parseInt(newLevelData.level);
+    const p = parseFloat(newLevelData.percentage);
+
+    if (isNaN(l) || isNaN(p)) {
+      alert("Invalid input values.");
+      return;
+    }
+
+    if (p < 0 || p > 100) {
+      alert("Percentage must be between 0 and 100.");
+      return;
+    }
+
+    // Check unique level for new levels
+    if (!editingLevel && commissionLevelsList.find(cl => cl.level === l)) {
+      alert("Level number already exists.");
+      return;
+    }
+
+    setIsSaving(true);
     try {
-      for (let i = 0; i < bulkTours.length; i++) {
-        setCurrentProcessingIndex(i);
-        const tour = bulkTours[i];
-
-        // 1. Generate Day-wise Itinerary
-        const itinerary = await generateItineraryForPackage(
-          tour.title || '',
-          tour.destination || '',
-          tour.duration || '3 days'
-        );
-
-        // 2. Generate AI Image for Destination
-        const image = await generateDestinationImage(tour.destination || tour.title || '');
-
-        // 3. Construct Final Package with specific contact info
-        const finalTour: TourPackage = {
-          id: tour.id || Math.random().toString(36).substr(2, 9),
-          title: tour.title || 'TripFlux Exclusive',
-          category: tour.category || 'Domestic',
-          destination: tour.destination || 'Various',
-          dates: tour.dates || '2025 Season',
-          price: tour.price || '₹0',
-          priceBasis: tour.priceBasis || 'Per Person',
-          duration: tour.duration || '3 days',
-          image: image,
-          itinerary: itinerary,
-          highlights: tour.highlights || [],
-          features: tour.features || ['Accommodation', 'Sightseeing', 'Transport'],
-          contactPhone: '7036665588',
-          contactEmail: 'info@tripfux.com'
-        } as TourPackage;
-
-        // 4. Save to DB
-        await onAddTour(finalTour);
+      if (editingLevel) {
+        await dbService.updateCommissionLevelAdmin({ level: editingLevel, percentage: p });
+      } else {
+        await dbService.createCommissionLevelAdmin({ level: l, percentage: p });
       }
-      alert('All packages processed and published successfully!');
-      setBulkTours([]);
+      setCommissionLevelsList(await dbService.getCommissionLevelsAdmin());
+      setShowLevelModal(false);
+      setEditingLevel(null);
+      setNewLevelData({ level: '', percentage: '' });
     } catch (err) {
       console.error(err);
-      alert('Error during finalization pipeline.');
+      alert("Failed to save commission level.");
     } finally {
-      setIsFinalizing(false);
-      setCurrentProcessingIndex(null);
+      setIsSaving(false);
     }
   };
 
   return (
-    <div className="max-w-7xl mx-auto py-12 px-6 pb-32">
-      <div className="flex justify-between items-center mb-10">
-        <div>
-          <h2 className="text-4xl font-black text-slate-900 tracking-tight uppercase leading-none">Management Center</h2>
-          <div className="flex gap-4 mt-4">
-            <button
-              onClick={() => setActiveTab('sync')}
-              className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'sync' ? 'bg-slate-900 text-white shadow-xl shadow-slate-200' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
-            >
-              Bulk Package Sync
-            </button>
-            <button
-              onClick={() => setActiveTab('deploy')}
-              className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'deploy' ? 'bg-indigo-600 text-white shadow-xl shadow-indigo-100' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
-            >
-              Deployment Protocol
-            </button>
-          </div>
+    <div className="min-h-screen bg-slate-50 flex">
+      {/* Sidebar */}
+      <div className="w-64 bg-slate-900 flex flex-col fixed top-0 left-0 h-screen overflow-y-auto shadow-2xl z-50">
+        <div className="p-6 pb-2">
+          <h2 className="text-2xl font-black text-white tracking-tight leading-none mb-1">TripFlux</h2>
+          <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Admin Command</p>
         </div>
-        <button onClick={onClose} className="px-6 py-2 bg-slate-100 text-slate-600 font-bold rounded-xl hover:bg-slate-200 transition-all cursor-pointer">
-          Exit Dashboard
-        </button>
+
+        <nav className="flex-1 px-4 py-6 space-y-2">
+          {[
+            { id: 'overview', icon: '📊', label: 'Dashboard' },
+            { id: 'users', icon: '👥', label: 'Users' },
+            { id: 'associates', icon: '💼', label: 'Associates' },
+            { id: 'packages', icon: '📦', label: 'Packages' },
+            { id: 'bookings', icon: '📅', label: 'Bookings' },
+            { id: 'commissions', icon: '💰', label: 'Commissions' },
+            { id: 'payouts', icon: '💸', label: 'Payouts' },
+            { id: 'promocodes', icon: '🎟️', label: 'Promo Codes' },
+            { id: 'refunds', icon: '🔄', label: 'Refunds' },
+            { id: 'commissionlevels', icon: '⚖️', label: 'Commission Levels' },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id as any)}
+              className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all ${activeTab === tab.id ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
+            >
+              <span className="text-lg">{tab.icon}</span>
+              <span className="text-[11px] font-black uppercase tracking-wider">{tab.label}</span>
+            </button>
+          ))}
+        </nav>
+
+        <div className="p-4 mt-auto border-t border-slate-800 flex flex-col gap-2">
+          <button onClick={onClose} className="w-full px-4 py-3 bg-slate-800 text-slate-300 rounded-xl hover:bg-slate-700 hover:text-white transition-all text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2">
+            <span>🏠</span> Go to Home Page
+          </button>
+          <button onClick={onLogout} className="w-full px-4 py-3 bg-red-500/10 text-red-500 rounded-xl hover:bg-red-500/20 transition-all text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2">
+            <span>🚪</span> Logout
+          </button>
+        </div>
       </div>
 
-      {activeTab === 'sync' ? (
-        <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <div className="mb-12 p-1 bg-gradient-to-tr from-indigo-600 to-slate-900 rounded-[48px] shadow-2xl">
-            <div className="bg-white rounded-[46px] p-10">
-              <div className="flex flex-col lg:flex-row gap-12 items-center">
-                <div className="w-full lg:w-1/3">
-                  <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tight flex items-center gap-3 mb-3">
-                    <span className="text-3xl">📥</span> Bulk Scraper
-                  </h3>
-                  <p className="text-xs font-bold text-slate-400 uppercase leading-relaxed tracking-widest">
-                    Upload a PDF or Image brochure. Our AI will extract individual tours row-by-row for your review before publishing.
-                  </p>
-                </div>
+      {/* Main Content */}
+      <div className="ml-64 flex-1 p-8 lg:p-12 overflow-x-hidden">
 
-                <div className="flex-1 w-full">
-                  <div
-                    className={`relative group border-4 border-dashed rounded-[40px] transition-all flex flex-col items-center justify-center p-12 cursor-pointer ${isAnalyzing ? 'bg-slate-50 border-slate-200 cursor-not-allowed' : 'bg-slate-50 border-indigo-100 hover:border-indigo-600 hover:bg-indigo-50/30'}`}
-                    onClick={() => !isAnalyzing && !isFinalizing && fileInputRef.current?.click()}
-                  >
-                    <input type="file" ref={fileInputRef} onChange={handleBulkUpload} className="hidden" accept="application/pdf,image/*,.docx,.xlsx" />
-                    {isAnalyzing ? (
-                      <div className="flex flex-col items-center">
-                        <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mb-4"></div>
-                        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-indigo-600">Extracting Tours...</p>
-                      </div>
-                    ) : (
-                      <>
-                        <div className="w-16 h-16 bg-white rounded-3xl flex items-center justify-center text-3xl shadow-xl mb-4 group-hover:scale-110 transition-transform">📂</div>
-                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 text-center">Drag & Drop File or Click to Select</p>
-                      </>
-                    )}
+        {activeTab === 'overview' ? (
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+              {[
+                { label: 'Total Users', value: stats.totalUsers, icon: '👥' },
+                { label: 'Total Associates', value: stats.totalAssociates, icon: '💼' },
+                { label: 'Total Packages', value: stats.totalPackages, icon: '📦' },
+                { label: 'Total Bookings', value: stats.totalBookings, icon: '📅' },
+                { label: 'Total Revenue', value: `₹${stats.totalRevenue.toLocaleString()}`, icon: '💰' },
+                { label: 'Pending Commissions', value: `₹${stats.pendingCommissions.toLocaleString()}`, icon: '⏳' },
+              ].map((stat, idx) => (
+                <div key={idx} className="bg-white p-6 rounded-2xl shadow-xl shadow-slate-200/50 border border-slate-100 flex items-center justify-between">
+                  <div>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{stat.label}</p>
+                    <p className="text-3xl font-black text-slate-900">{stat.value}</p>
+                  </div>
+                  <div className="text-4xl bg-indigo-50 w-16 h-16 flex items-center justify-center rounded-2xl">
+                    {stat.icon}
                   </div>
                 </div>
-              </div>
+              ))}
             </div>
           </div>
-
-          {bulkTours.length > 0 && (
-            <div className="bg-white p-10 rounded-[50px] shadow-2xl border border-slate-100 animate-in fade-in slide-in-from-top-4 duration-700">
-              <div className="flex justify-between items-center mb-10">
-                <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tight">Review Extracted Packages</h3>
-                <div className="px-4 py-2 bg-emerald-50 text-emerald-600 rounded-xl text-[10px] font-black uppercase">
-                  {bulkTours.length} Packages Detected
-                </div>
+        ) : activeTab === 'users' ? (
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 bg-white p-8 rounded-3xl shadow-xl">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-2xl font-black text-slate-900 uppercase">User Management</h3>
+              <div className="flex gap-4">
+                <input
+                  type="text"
+                  placeholder="Search Users..."
+                  value={userSearch}
+                  onChange={(e) => setUserSearch(e.target.value)}
+                  className="px-4 py-2 border border-slate-200 rounded-xl text-sm"
+                />
               </div>
-
-              <div className="overflow-x-auto no-scrollbar mb-10">
-                <table className="w-full text-left border-collapse min-w-[1000px]">
-                  <thead>
-                    <tr className="border-b border-slate-100">
-                      <th className="pb-4 px-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">Title</th>
-                      <th className="pb-4 px-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">Category</th>
-                      <th className="pb-4 px-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">Destination</th>
-                      <th className="pb-4 px-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">Price</th>
-                      <th className="pb-4 px-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">Basis</th>
-                      <th className="pb-4 px-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">Duration</th>
-                      <th className="pb-4 px-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="border-b uppercase text-[10px] font-black text-slate-400">
+                    <th className="p-3">Name</th>
+                    <th className="p-3">Email</th>
+                    <th className="p-3">Phone</th>
+                    <th className="p-3">Status</th>
+                    <th className="p-3">Joined</th>
+                    <th className="p-3">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {usersList.filter(u => `${u.first_name} ${u.last_name} ${u.email} ${u.phone}`.toLowerCase().includes(userSearch.toLowerCase())).map(u => (
+                    <tr key={u.user_id} className="border-b hover:bg-slate-50">
+                      <td className="p-3 font-bold">{u.first_name} {u.last_name}</td>
+                      <td className="p-3 text-sm">{u.email}</td>
+                      <td className="p-3 text-sm">{u.phone}</td>
+                      <td className="p-3 text-[10px] uppercase font-bold">
+                        <span className={`px-2 py-1 rounded ${u.status === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
+                          {u.status}
+                        </span>
+                      </td>
+                      <td className="p-3 text-sm">{new Date(u.created_at).toLocaleDateString()}</td>
+                      <td className="p-3">
+                        <button
+                          onClick={async () => {
+                            const newStatus = u.status === 'active' ? 'inactive' : 'active';
+                            await dbService.updateUserStatus(u.user_id, newStatus);
+                            setUsersList(await dbService.getUsers());
+                          }}
+                          className={`text-xs px-3 py-1 rounded font-bold ${u.status === 'active' ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-600'}`}>
+                          {u.status === 'active' ? 'Deactivate' : 'Activate'}
+                        </button>
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-50">
-                    {bulkTours.map((tour, idx) => (
-                      <tr key={tour.id || idx} className={`group ${currentProcessingIndex === idx ? 'bg-indigo-50/50' : 'hover:bg-slate-50/50'}`}>
-                        <td className="py-4 px-2">
-                          <input
-                            value={tour.title || ''}
-                            onChange={(e) => handleUpdateField(idx, 'title', e.target.value)}
-                            className="w-full bg-transparent border-none outline-none font-bold text-slate-900 focus:text-indigo-600 transition-colors"
-                          />
-                        </td>
-                        <td className="py-4 px-2">
-                          <select
-                            value={tour.category}
-                            onChange={(e) => handleUpdateField(idx, 'category', e.target.value)}
-                            className="bg-transparent border-none outline-none font-bold text-slate-500 text-xs"
-                          >
-                            <option>Domestic</option><option>International</option><option>Honeymoon</option><option>Adventure</option><option>Pilgrimage</option>
-                          </select>
-                        </td>
-                        <td className="py-4 px-2">
-                          <input
-                            value={tour.destination || ''}
-                            onChange={(e) => handleUpdateField(idx, 'destination', e.target.value)}
-                            className="w-full bg-transparent border-none outline-none font-bold text-slate-600 text-xs"
-                          />
-                        </td>
-                        <td className="py-4 px-2">
-                          <input
-                            value={tour.price || ''}
-                            onChange={(e) => handleUpdateField(idx, 'price', e.target.value)}
-                            className="w-full bg-transparent border-none outline-none font-black text-indigo-600"
-                          />
-                        </td>
-                        <td className="py-4 px-2">
-                          <select
-                            value={tour.priceBasis}
-                            onChange={(e) => handleUpdateField(idx, 'priceBasis', e.target.value)}
-                            className="bg-transparent border-none outline-none font-bold text-slate-500 text-xs"
-                          >
-                            <option>Per Person</option><option>Per Couple</option><option>Group</option>
-                          </select>
-                        </td>
-                        <td className="py-4 px-2">
-                          <input
-                            value={tour.duration || ''}
-                            onChange={(e) => handleUpdateField(idx, 'duration', e.target.value)}
-                            className="w-full bg-transparent border-none outline-none font-bold text-slate-600 text-xs"
-                          />
-                        </td>
-                        <td className="py-4 px-2">
-                          {currentProcessingIndex === idx ? (
-                            <div className="flex items-center gap-2">
-                              <div className="w-2 h-2 bg-indigo-600 rounded-full animate-ping"></div>
-                              <span className="text-[8px] font-black uppercase text-indigo-600">Generating AI...</span>
-                            </div>
-                          ) : currentProcessingIndex !== null && currentProcessingIndex > idx ? (
-                            <span className="text-[8px] font-black uppercase text-emerald-500">Live ✓</span>
-                          ) : (
-                            <span className="text-[8px] font-black uppercase text-slate-300">Queue</span>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ) : activeTab === 'associates' ? (
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 bg-white p-8 rounded-3xl shadow-xl">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-2xl font-black text-slate-900 uppercase">Associate Management</h3>
+              <div className="flex gap-4">
+                <input
+                  type="text"
+                  placeholder="Search Associates..."
+                  value={associateSearch}
+                  onChange={(e) => setAssociateSearch(e.target.value)}
+                  className="px-4 py-2 border border-slate-200 rounded-xl text-sm"
+                />
               </div>
-
-              <div className="flex flex-col md:flex-row items-center justify-between gap-6 p-10 bg-slate-950 rounded-[40px] text-white">
-                <div className="flex gap-8">
-                  <div className="space-y-1">
-                    <p className="text-[10px] font-black text-white/40 uppercase tracking-widest">Workflow Status</p>
-                    <p className="text-sm font-bold">Ready to publish to Neon DB Cluster</p>
-                  </div>
-                </div>
-
-                <button
-                  onClick={finalizeBulkPublish}
-                  disabled={isFinalizing}
-                  className="px-12 py-5 bg-indigo-600 text-white font-black rounded-2xl hover:bg-indigo-500 hover:scale-105 transition-all shadow-2xl shadow-indigo-500/30 disabled:opacity-50 flex items-center gap-4"
-                >
-                  {isFinalizing ? (
-                    <>
-                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                      Processing {currentProcessingIndex !== null ? currentProcessingIndex + 1 : 0} / {bulkTours.length}
-                    </>
-                  ) : (
-                    <>
-                      <span className="text-xl">🚀</span>
-                      Confirm & Sync to DB
-                    </>
-                  )}
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="border-b uppercase text-[10px] font-black text-slate-400">
+                    <th className="p-3">Name / Parent</th>
+                    <th className="p-3">Contact</th>
+                    <th className="p-3">PAN</th>
+                    <th className="p-3">KYC</th>
+                    <th className="p-3">Status</th>
+                    <th className="p-3">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {associatesList.filter(u => `${u.first_name} ${u.last_name} ${u.email} ${u.phone} ${u.pan_number}`.toLowerCase().includes(associateSearch.toLowerCase())).map(u => (
+                    <tr key={u.user_id} className="border-b hover:bg-slate-50">
+                      <td className="p-3">
+                        <div className="font-bold">{u.first_name} {u.last_name}</div>
+                        <div className="text-[10px] text-slate-400">Parent: {u.parent_associate_id || 'None'}</div>
+                      </td>
+                      <td className="p-3 text-sm">
+                        <div>{u.email}</div>
+                        <div className="text-slate-500">{u.phone}</div>
+                      </td>
+                      <td className="p-3 text-sm font-mono">{u.pan_number || 'N/A'}</td>
+                      <td className="p-3 text-[10px] uppercase font-bold">
+                        <span className={`px-2 py-1 rounded ${u.kyc_status === 'approved' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                          {u.kyc_status || 'Pending'}
+                        </span>
+                      </td>
+                      <td className="p-3 text-[10px] uppercase font-bold">
+                        <span className={`px-2 py-1 rounded ${u.status === 'active' ? 'bg-indigo-100 text-indigo-700' : 'bg-red-100 text-red-700'}`}>
+                          {u.status}
+                        </span>
+                      </td>
+                      <td className="p-3 flex flex-wrap gap-2">
+                        <button
+                          onClick={async () => {
+                            const nextKyc = u.kyc_status === 'approved' ? 'pending' : 'approved';
+                            await dbService.updateAssociateKyc(u.user_id, nextKyc);
+                            setAssociatesList(await dbService.getAssociates());
+                          }}
+                          className={`text-[10px] px-2 py-1 rounded font-bold ${u.kyc_status === 'approved' ? 'bg-amber-50 text-amber-600' : 'bg-emerald-50 text-emerald-600'}`}>
+                          {u.kyc_status === 'approved' ? 'Revoke KYC' : 'Approve KYC'}
+                        </button>
+                        <button
+                          onClick={async () => {
+                            const newStatus = u.status === 'active' ? 'suspended' : 'active';
+                            await dbService.updateAssociateStatus(u.user_id, newStatus);
+                            setAssociatesList(await dbService.getAssociates());
+                          }}
+                          className={`text-[10px] px-2 py-1 rounded font-bold ${u.status === 'active' ? 'bg-red-50 text-red-600' : 'bg-indigo-50 text-indigo-600'}`}>
+                          {u.status === 'active' ? 'Suspend' : 'Activate'}
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ) : activeTab === 'packages' ? (
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 bg-white p-8 rounded-3xl shadow-xl">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-2xl font-black text-slate-900 uppercase">Package Management</h3>
+              <div className="flex gap-4">
+                <input
+                  type="text"
+                  placeholder="Search Packages..."
+                  value={packageSearch}
+                  onChange={(e) => setPackageSearch(e.target.value)}
+                  className="px-4 py-2 border border-slate-200 rounded-xl text-sm"
+                />
+                <button className="px-4 py-2 bg-indigo-600 text-white font-bold rounded-xl text-xs uppercase hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-600/20" onClick={() => {
+                  setEditingPackageId(null);
+                  setNewPackage({
+                    name: '',
+                    destination: '',
+                    duration: '',
+                    price: '',
+                    description: '',
+                    category: 'Domestic',
+                    image: '',
+                    location: '',
+                    track: '',
+                    status: 'active'
+                  });
+                  setItineraryRows([]);
+                  setShowAddModal(true);
+                }}>
+                  + New Package
                 </button>
               </div>
             </div>
-          )}
-        </div>
-      ) : (
-        <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-1 space-y-6">
-              <div className="bg-slate-50 p-8 rounded-[40px] border border-slate-200">
-                <h4 className="text-lg font-black text-slate-900 uppercase tracking-tight mb-6 flex items-center gap-2">
-                  <span className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white text-sm">⌨️</span>
-                  Admin Terminal
-                </h4>
-                <div className="space-y-4">
-                  <div className="p-4 bg-white border border-slate-200 rounded-2xl flex items-center justify-between">
-                    <span className="text-sm font-bold text-slate-700">Database</span>
-                    <span className="text-[10px] font-black text-emerald-600 bg-emerald-50 px-2 py-1 rounded">CONNECTED</span>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="border-b uppercase text-[10px] font-black text-slate-400">
+                    <th className="p-3">Name</th>
+                    <th className="p-3">Category</th>
+                    <th className="p-3">Destination</th>
+                    <th className="p-3">Price</th>
+                    <th className="p-3">Duration</th>
+                    <th className="p-3">Status</th>
+                    <th className="p-3">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {packagesList.filter(p => `${p.name} ${p.destination}`.toLowerCase().includes(packageSearch.toLowerCase())).map(p => (
+                    <tr key={p.package_id} className="border-b hover:bg-slate-50">
+                      <td className="p-3 font-bold">{p.name}</td>
+                      <td className="p-3 text-[10px] uppercase font-medium">{p.category}</td>
+                      <td className="p-3 text-sm">{p.destination}</td>
+                      <td className="p-3 text-sm font-mono">₹{p.price}</td>
+                      <td className="p-3 text-sm">{p.duration}</td>
+                      <td className="p-3 text-[10px] uppercase font-bold">
+                        <span className={`px-2 py-1 rounded ${p.status === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-700'}`}>
+                          {p.status}
+                        </span>
+                      </td>
+                      <td className="p-3 flex gap-2">
+                        <button
+                          onClick={() => {
+                            setEditingPackageId(p.package_id);
+                            setNewPackage({
+                              name: p.name,
+                              destination: p.destination,
+                              duration: p.duration,
+                              price: p.price.toString(),
+                              description: p.description || '',
+                              category: p.category || 'Domestic',
+                              image: p.image || '',
+                              location: p.location || '',
+                              track: p.track || '',
+                              status: p.status
+                            });
+                            
+                            // Load itinerary rows
+                            const rows: { day: number; activity: string; description: string }[] = [];
+                            if (p.itinerary && Array.isArray(p.itinerary)) {
+                              p.itinerary.forEach((day: any) => {
+                                if (day.activities && Array.isArray(day.activities)) {
+                                  day.activities.forEach((act: any) => {
+                                    rows.push({
+                                      day: day.day,
+                                      activity: act.activity,
+                                      description: act.description
+                                    });
+                                  });
+                                }
+                              });
+                            }
+                            setItineraryRows(rows);
+                            setShowAddModal(true);
+                          }}
+                          className="text-[10px] px-2 py-1 rounded font-bold bg-indigo-50 text-indigo-600">
+                          Edit
+                        </button>
+                        <button
+                          onClick={async () => {
+                            const newStatus = p.status === 'active' ? 'inactive' : 'active';
+                            await dbService.updatePackageStatus(p.package_id, newStatus);
+                            setPackagesList(await dbService.getPackagesAdmin());
+                          }}
+                          className={`text-[10px] px-2 py-1 rounded font-bold ${p.status === 'active' ? 'bg-amber-50 text-amber-600' : 'bg-emerald-50 text-emerald-600'}`}>
+                          Toggle Status
+                        </button>
+                        <button
+                          onClick={async () => {
+                            if (confirm('Delete this package permanently?')) {
+                              await dbService.deletePackageAdmin(p.package_id);
+                              setPackagesList(await dbService.getPackagesAdmin());
+                            }
+                          }}
+                          className="text-[10px] px-2 py-1 rounded font-bold bg-red-50 text-red-600">
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ) : activeTab === 'bookings' ? (
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 bg-white p-8 rounded-3xl shadow-xl">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-2xl font-black text-slate-900 uppercase">Booking Management</h3>
+              <div className="flex gap-4">
+                <input
+                  type="text"
+                  placeholder="Search Bookings..."
+                  value={bookingSearch}
+                  onChange={(e) => setBookingSearch(e.target.value)}
+                  className="px-4 py-2 border border-slate-200 rounded-xl text-sm"
+                />
+              </div>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="border-b uppercase text-[10px] font-black text-slate-400">
+                    <th className="p-3">ID</th>
+                    <th className="p-3">Passenger</th>
+                    <th className="p-3">Associate</th>
+                    <th className="p-3">Package</th>
+                    <th className="p-3">Date</th>
+                    <th className="p-3">Amount</th>
+                    <th className="p-3">Status</th>
+                    <th className="p-3">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {bookingsList.map(b => (
+                    <tr key={b.booking_id} className="border-b hover:bg-slate-50">
+                      <td className="p-3 font-mono text-xs">#{b.booking_id}</td>
+                      <td className="p-3 font-bold">{b.user_first_name} {b.user_last_name}</td>
+                      <td className="p-3 text-sm text-indigo-600">{b.assoc_first_name} {b.assoc_last_name}</td>
+                      <td className="p-3 text-sm">{b.package_name}</td>
+                      <td className="p-3 text-sm">{new Date(b.travel_date).toLocaleDateString()}</td>
+                      <td className="p-3 text-sm font-mono">₹{b.total_amount}</td>
+                      <td className="p-3 text-[10px] uppercase font-bold">
+                        <span className={`px-2 py-1 rounded ${b.status === 'confirmed' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                          {b.status}
+                        </span>
+                      </td>
+                      <td className="p-3">
+                        <select
+                          className="text-xs border border-slate-200 rounded p-1"
+                          value={b.status}
+                          onChange={async (e) => {
+                            await dbService.updateBookingStatus(b.booking_id, e.target.value);
+                            setBookingsList(await dbService.getBookingsAdmin());
+                          }}
+                        >
+                          <option value="pending">Pending</option>
+                          <option value="confirmed">Confirmed</option>
+                          <option value="cancelled">Cancelled</option>
+                        </select>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ) : activeTab === 'commissions' ? (
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 bg-white p-8 rounded-3xl shadow-xl">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-2xl font-black text-slate-900 uppercase">Commission Management</h3>
+              <div className="flex gap-4">
+                <input
+                  type="text"
+                  placeholder="Search Commissions..."
+                  value={commissionSearch}
+                  onChange={(e) => setCommissionSearch(e.target.value)}
+                  className="px-4 py-2 border border-slate-200 rounded-xl text-sm"
+                />
+              </div>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="border-b uppercase text-[10px] font-black text-slate-400">
+                    <th className="p-3">ID</th>
+                    <th className="p-3">Assoc ID</th>
+                    <th className="p-3">Booking ID</th>
+                    <th className="p-3">Level</th>
+                    <th className="p-3">Amount</th>
+                    <th className="p-3">Status</th>
+                    <th className="p-3">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {commissionsList.map(c => (
+                    <tr key={c.commission_id} className="border-b hover:bg-slate-50">
+                      <td className="p-3 font-mono text-xs">#{c.commission_id}</td>
+                      <td className="p-3 text-sm font-bold">Assoc #{c.associate_id}</td>
+                      <td className="p-3 text-sm">Booking #{c.booking_id}</td>
+                      <td className="p-3 text-sm">Lvl {c.level || 1}</td>
+                      <td className="p-3 text-sm font-mono text-emerald-600">₹{c.commission_amount}</td>
+                      <td className="p-3 text-[10px] uppercase font-bold">
+                        <span className={`px-2 py-1 rounded ${c.status === 'paid' ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-100 text-slate-700'}`}>
+                          {c.status}
+                        </span>
+                      </td>
+                      <td className="p-3">
+                        <button
+                          onClick={async () => {
+                            const newStatus = c.status === 'paid' ? 'pending' : 'paid';
+                            await dbService.updateCommissionStatus(c.commission_id, newStatus);
+                            setCommissionsList(await dbService.getCommissionsAdmin());
+                          }}
+                          className={`text-[10px] px-2 py-1 rounded font-bold ${c.status === 'paid' ? 'bg-amber-50 text-amber-600' : 'bg-emerald-50 text-emerald-600'}`}>
+                          Mark as {c.status === 'paid' ? 'Pending' : 'Paid'}
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ) : activeTab === 'payouts' ? (
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 bg-white p-8 rounded-3xl shadow-xl">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-2xl font-black text-slate-900 uppercase">Payout Management</h3>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="border-b uppercase text-[10px] font-black text-slate-400">
+                    <th className="p-3">Payout ID</th>
+                    <th className="p-3">Associate ID</th>
+                    <th className="p-3">Amount</th>
+                    <th className="p-3">Mode</th>
+                    <th className="p-3">Ref ID</th>
+                    <th className="p-3">Date</th>
+                    <th className="p-3">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {payoutsList.map(p => (
+                    <tr key={p.payout_id} className="border-b hover:bg-slate-50">
+                      <td className="p-3 font-mono text-xs">#{p.payout_id}</td>
+                      <td className="p-3 text-sm font-bold">Assoc #{p.associate_id}</td>
+                      <td className="p-3 text-sm font-mono text-emerald-600">₹{p.amount}</td>
+                      <td className="p-3 text-sm uppercase text-[10px] font-bold">{p.payment_mode}</td>
+                      <td className="p-3 text-sm font-mono text-xs">{p.transaction_reference}</td>
+                      <td className="p-3 text-sm text-slate-500">{new Date(p.paid_at).toLocaleString()}</td>
+                      <td className="p-3 text-[10px] uppercase font-bold">
+                        <span className="px-2 py-1 rounded bg-emerald-100 text-emerald-700">
+                          {p.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ) : activeTab === 'promocodes' ? (
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 bg-white p-8 rounded-3xl shadow-xl">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-2xl font-black text-slate-900 uppercase">Promo Code Tracking</h3>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="border-b uppercase text-[10px] font-black text-slate-400">
+                    <th className="p-3">Code</th>
+                    <th className="p-3">Associate ID</th>
+                    <th className="p-3">Status</th>
+                    <th className="p-3">Created</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {promoCodesList.map(p => (
+                    <tr key={p.promo_id} className="border-b hover:bg-slate-50">
+                      <td className="p-3 font-bold font-mono text-indigo-600">{p.code}</td>
+                      <td className="p-3 text-sm font-bold">Assoc #{p.associate_id}</td>
+                      <td className="p-3 text-[10px] uppercase font-bold">
+                        <span className={`px-2 py-1 rounded ${p.status === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
+                          {p.status}
+                        </span>
+                      </td>
+                      <td className="p-3 text-sm text-slate-500">{new Date(p.created_at).toLocaleDateString()}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ) : activeTab === 'refunds' ? (
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 bg-white p-8 rounded-3xl shadow-xl">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-2xl font-black text-slate-900 uppercase">Refund Management</h3>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="border-b uppercase text-[10px] font-black text-slate-400">
+                    <th className="p-3">Refund ID</th>
+                    <th className="p-3">Booking ID</th>
+                    <th className="p-3">Gateway Ref</th>
+                    <th className="p-3">Amount</th>
+                    <th className="p-3">Reason</th>
+                    <th className="p-3">Status</th>
+                    <th className="p-3">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {refundsList.map(r => (
+                    <tr key={r.refund_id} className="border-b hover:bg-slate-50">
+                      <td className="p-3 font-mono text-xs">#{r.refund_id}</td>
+                      <td className="p-3 text-sm font-bold">Booking #{r.booking_id}</td>
+                      <td className="p-3 font-mono text-xs">{r.payment_id}</td>
+                      <td className="p-3 text-sm font-mono text-red-600">₹{r.amount}</td>
+                      <td className="p-3 text-sm max-w-xs truncate">{r.reason}</td>
+                      <td className="p-3 text-[10px] uppercase font-bold">
+                        <span className={`px-2 py-1 rounded ${r.status === 'approved' ? 'bg-emerald-100 text-emerald-700' : r.status === 'rejected' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>
+                          {r.status}
+                        </span>
+                      </td>
+                      <td className="p-3">
+                        <select
+                          className="text-xs border border-slate-200 rounded p-1"
+                          value={r.status}
+                          onChange={async (e) => {
+                            await dbService.updateRefundStatus(r.refund_id, e.target.value);
+                            setRefundsList(await dbService.getRefundsAdmin());
+                          }}
+                        >
+                          <option value="pending">Pending</option>
+                          <option value="approved">Approved</option>
+                          <option value="rejected">Rejected</option>
+                        </select>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ) : activeTab === 'commissionlevels' ? (
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 bg-white p-8 rounded-3xl shadow-xl">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-2xl font-black text-slate-900 uppercase">Commission Levels</h3>
+              <button 
+                onClick={() => {
+                  setEditingLevel(null);
+                  setNewLevelData({ level: '', percentage: '' });
+                  setShowLevelModal(true);
+                }}
+                className="px-6 py-3 bg-indigo-600 text-white font-black rounded-2xl hover:bg-black transition-all shadow-xl shadow-indigo-600/30 uppercase text-xs tracking-widest"
+              >
+                + New Level
+              </button>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="border-b uppercase text-[10px] font-black text-slate-400">
+                    <th className="p-3">Level</th>
+                    <th className="p-3">Percentage (%)</th>
+                    <th className="p-3">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {commissionLevelsList.map(cl => (
+                    <tr key={cl.level} className="border-b hover:bg-slate-50">
+                      <td className="p-3 font-bold text-slate-900">Level {cl.level}</td>
+                      <td className="p-3 font-mono font-bold text-indigo-600">{cl.percentage}%</td>
+                      <td className="p-3 flex gap-2">
+                        <button
+                          onClick={() => {
+                            setEditingLevel(cl.level);
+                            setNewLevelData({ level: cl.level.toString(), percentage: cl.percentage.toString() });
+                            setShowLevelModal(true);
+                          }}
+                          className="text-[10px] px-2 py-1 rounded font-bold bg-indigo-50 text-indigo-600"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={async () => {
+                            if (confirm(`Are you sure you want to delete Level ${cl.level}? This may affect future commission calculations.`)) {
+                              await dbService.deleteCommissionLevelAdmin(cl.level);
+                              setCommissionLevelsList(await dbService.getCommissionLevelsAdmin());
+                            }
+                          }}
+                          className="text-[10px] px-2 py-1 rounded font-bold bg-red-50 text-red-600"
+                        >
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ) : null}
+      </div>
+
+      {/* Add Package Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl w-full max-w-4xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
+            <div className="p-8 border-b border-slate-100 flex justify-between items-center">
+              <div>
+                <h3 className="text-2xl font-black text-slate-900 uppercase">{editingPackageId ? 'Edit Tour Package' : 'Add New Tour Package'}</h3>
+                <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">{editingPackageId ? `ID: #${editingPackageId}` : 'Manual Entry'}</p>
+              </div>
+              <button 
+                onClick={() => setShowAddModal(false)}
+                className="w-10 h-10 rounded-full hover:bg-slate-50 flex items-center justify-center text-slate-400 hover:text-slate-900 transition-all"
+              >
+                ✕
+              </button>
+            </div>
+            <form onSubmit={handleAddPackage} className="flex flex-col max-h-[90vh]">
+              <div className="p-8 space-y-6 overflow-y-auto custom-scrollbar">
+              <div className="grid grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Package Name *</label>
+                  <input
+                    required
+                    type="text"
+                    value={newPackage.name}
+                    onChange={(e) => setNewPackage({ ...newPackage, name: e.target.value })}
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-600 focus:bg-white outline-none transition-all text-sm"
+                    placeholder="e.g. KASHMIR SPECIAL"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Destination *</label>
+                  <input
+                    required
+                    type="text"
+                    value={newPackage.destination}
+                    onChange={(e) => setNewPackage({ ...newPackage, destination: e.target.value })}
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-600 focus:bg-white outline-none transition-all text-sm"
+                    placeholder="e.g. Gulmarg, Srinigar"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Category *</label>
+                  <select
+                    required
+                    value={newPackage.category}
+                    onChange={(e) => setNewPackage({ ...newPackage, category: e.target.value })}
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-600 focus:bg-white outline-none transition-all text-sm"
+                  >
+                    <option value="Domestic">Domestic</option>
+                    <option value="International">International</option>
+                    <option value="Temple">Temple</option>
+                    <option value="Pilgrimage">Pilgrimage</option>
+                    <option value="Adventure">Adventure</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Duration *</label>
+                  <input
+                    required
+                    type="text"
+                    value={newPackage.duration}
+                    onChange={(e) => setNewPackage({ ...newPackage, duration: e.target.value })}
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-600 focus:bg-white outline-none transition-all text-sm"
+                    placeholder="e.g. 6 Nights - 7 Days"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Price (₹) *</label>
+                  <input
+                    required
+                    type="number"
+                    value={newPackage.price}
+                    onChange={(e) => setNewPackage({ ...newPackage, price: e.target.value })}
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-600 focus:bg-white outline-none transition-all text-sm font-mono"
+                    placeholder="25000"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Status</label>
+                  <select
+                    value={newPackage.status}
+                    onChange={(e) => setNewPackage({ ...newPackage, status: e.target.value })}
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-600 focus:bg-white outline-none transition-all text-sm"
+                  >
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Current Location</label>
+                  <input
+                    type="text"
+                    value={newPackage.location}
+                    onChange={(e) => setNewPackage({ ...newPackage, location: e.target.value })}
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-600 focus:bg-white outline-none transition-all text-sm"
+                    placeholder="e.g. Near Mall Road"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Tourist Track (Places)</label>
+                  <input
+                    type="text"
+                    value={newPackage.track}
+                    onChange={(e) => setNewPackage({ ...newPackage, track: e.target.value })}
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-600 focus:bg-white outline-none transition-all text-sm"
+                    placeholder="e.g. Delhi > Agra > Jaipur"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Package Image</label>
+                <div className="flex items-center gap-4">
+                  {newPackage.image && (
+                    <img 
+                      src={newPackage.image} 
+                      alt="Preview" 
+                      className="w-20 h-20 object-cover rounded-xl border-2 border-slate-100"
+                    />
+                  )}
+                  <div className="flex-1">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageChange}
+                      className="hidden"
+                      id="package-image-upload"
+                    />
+                    <label 
+                      htmlFor="package-image-upload"
+                      className="inline-block px-6 py-3 bg-slate-50 border border-dashed border-slate-200 rounded-2xl text-xs font-bold text-slate-500 cursor-pointer hover:bg-slate-100 transition-all text-center w-full"
+                    >
+                      {newPackage.image ? 'Change Image' : 'Click to Upload Package Image'}
+                    </label>
                   </div>
-                  <div className="p-4 bg-white border border-slate-200 rounded-2xl flex items-center gap-3">
-                    <p className="text-xs font-semibold text-slate-600">Accessing project: <span className="font-black text-indigo-600">TripFlux Production</span></p>
-                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Description / Highlights</label>
+                <textarea
+                  value={newPackage.description}
+                  onChange={(e) => setNewPackage({ ...newPackage, description: e.target.value })}
+                  className="w-full h-24 px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-600 focus:bg-white outline-none transition-all text-sm"
+                  placeholder="Enter package details, inclusions or highlights..."
+                />
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Day-wise Itinerary</label>
+                  <button 
+                    type="button" 
+                    onClick={addItineraryRow}
+                    className="text-[10px] font-black text-indigo-600 uppercase hover:text-indigo-700"
+                  >
+                    + Add Day/Entry
+                  </button>
+                </div>
+                
+                <div className="space-y-3 max-h-60 overflow-y-auto pr-2">
+                  {itineraryRows.map((row, idx) => (
+                    <div key={idx} className="p-4 bg-slate-50 rounded-2xl border border-slate-100 space-y-3 relative group">
+                      <button 
+                        type="button"
+                        onClick={() => removeItineraryRow(idx)}
+                        className="absolute top-2 right-2 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all font-bold text-xs"
+                      >
+                        ✕
+                      </button>
+                      <div className="grid grid-cols-4 gap-3">
+                        <div className="col-span-1">
+                          <label className="text-[9px] font-bold text-slate-400 uppercase">Day</label>
+                          <input 
+                            type="number"
+                            value={row.day}
+                            onChange={(e) => updateItineraryRow(idx, 'day', parseInt(e.target.value))}
+                            className="w-full px-3 py-2 bg-white border border-slate-100 rounded-xl text-xs outline-none focus:ring-1 focus:ring-indigo-500"
+                          />
+                        </div>
+                        <div className="col-span-3">
+                          <label className="text-[9px] font-bold text-slate-400 uppercase">Activity</label>
+                          <input 
+                            type="text"
+                            value={row.activity}
+                            onChange={(e) => updateItineraryRow(idx, 'activity', e.target.value)}
+                            className="w-full px-3 py-2 bg-white border border-slate-100 rounded-xl text-xs outline-none focus:ring-1 focus:ring-indigo-500"
+                            placeholder="e.g. Arrival & Hotel Check-in"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-[9px] font-bold text-slate-400 uppercase">Description</label>
+                        <textarea 
+                          value={row.description}
+                          onChange={(e) => updateItineraryRow(idx, 'description', e.target.value)}
+                          className="w-full h-16 px-3 py-2 bg-white border border-slate-100 rounded-xl text-xs outline-none focus:ring-1 focus:ring-indigo-500"
+                          placeholder="What will tourists do on this day?"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                  {itineraryRows.length === 0 && (
+                    <p className="text-center py-4 text-xs text-slate-400 font-medium italic">No itinerary entries added yet.</p>
+                  )}
                 </div>
               </div>
             </div>
 
-            <div className="lg:col-span-2 bg-slate-900 rounded-[50px] p-10 md:p-14 text-white relative overflow-hidden shadow-2xl border border-slate-800">
-              <h3 className="text-3xl font-black mb-10 flex items-center gap-3">Cloud Hosting Protocol</h3>
-              <div className="space-y-10 font-mono text-xs">
-                <div className="p-6 bg-black rounded-2xl border border-white/10 text-indigo-400">npm install -g firebase-tools</div>
-                <div className="p-6 bg-black rounded-2xl border border-white/10 text-indigo-400">firebase login</div>
-                <div className="p-6 bg-indigo-900/30 rounded-2xl border border-indigo-500/50 text-white animate-pulse">firebase deploy --only hosting</div>
+            <div className="p-8 border-t border-slate-100 flex gap-4 bg-slate-50/50">
+                <button
+                  type="button"
+                  onClick={() => setShowAddModal(false)}
+                  className="flex-1 px-8 py-4 border border-slate-200 text-slate-400 font-bold rounded-2xl hover:bg-slate-50 transition-all uppercase text-xs tracking-widest"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSaving}
+                  className="flex-2 px-12 py-4 bg-indigo-600 text-white font-black rounded-2xl hover:bg-black transition-all shadow-xl shadow-indigo-600/30 uppercase text-xs tracking-widest disabled:opacity-50"
+                >
+                  {isSaving ? 'Processing...' : (editingPackageId ? 'Update Package' : 'Add Package')}
+                </button>
               </div>
+            </form>
+          </div>
+        </div>
+      )}
+      {/* Commission Level Modal */}
+      {showLevelModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[70] flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
+            <div className="p-8 border-b border-slate-100 flex justify-between items-center">
+              <div>
+                <h3 className="text-2xl font-black text-slate-900 uppercase">{editingLevel ? 'Edit Level' : 'Add New Level'}</h3>
+                <p className="text-xs font-bold text-slate-400 mt-1 uppercase tracking-widest">Adjust MLM commission rules</p>
+              </div>
+              <button 
+                onClick={() => setShowLevelModal(false)}
+                className="w-10 h-10 rounded-full hover:bg-slate-50 flex items-center justify-center text-slate-400 hover:text-slate-900 transition-all"
+              >
+                ✕
+              </button>
             </div>
+            <form onSubmit={handleLevelSubmit}>
+              <div className="p-8 space-y-6">
+                <div className="space-y-2">
+                  <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Level Number</label>
+                  <input
+                    required
+                    type="number"
+                    disabled={!!editingLevel}
+                    value={newLevelData.level}
+                    onChange={(e) => setNewLevelData({ ...newLevelData, level: e.target.value })}
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-600 focus:bg-white outline-none transition-all text-sm disabled:opacity-50"
+                    placeholder="e.g. 1"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Percentage (%)</label>
+                  <input
+                    required
+                    type="number"
+                    step="0.01"
+                    value={newLevelData.percentage}
+                    onChange={(e) => setNewLevelData({ ...newLevelData, percentage: e.target.value })}
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-600 focus:bg-white outline-none transition-all text-sm"
+                    placeholder="e.g. 5"
+                  />
+                </div>
+              </div>
+              <div className="p-8 border-t border-slate-100 flex gap-4 bg-slate-50/50">
+                <button
+                  type="button"
+                  onClick={() => setShowLevelModal(false)}
+                  className="flex-1 px-8 py-4 border border-slate-200 text-slate-400 font-bold rounded-2xl hover:bg-slate-50 transition-all uppercase text-xs tracking-widest"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSaving}
+                  className="flex-2 px-12 py-4 bg-indigo-600 text-white font-black rounded-2xl hover:bg-black transition-all shadow-xl shadow-indigo-600/30 uppercase text-xs tracking-widest disabled:opacity-50"
+                >
+                  {isSaving ? 'Saving...' : (editingLevel ? 'Update' : 'Create')}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

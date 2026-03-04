@@ -4,6 +4,8 @@ export interface User {
   name: string;
   email: string;
   avatar?: string;
+  role?: string;
+  promoCode?: string;
 }
 
 export interface ItineraryDay {
@@ -53,6 +55,9 @@ export interface TourPackage {
   features?: string[];
   mediaFiles?: MediaFile[];
   itinerary?: ItineraryDay[];
+  description?: string;
+  location?: string;
+  track?: string;
 }
 
 export interface TravelTemplate {

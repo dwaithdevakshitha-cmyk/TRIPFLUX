@@ -1,11 +1,12 @@
 
 import React, { useState, useEffect } from 'react';
-import { TourPackage } from '../types';
+import { TourPackage, User } from '../types';
 import { locationTrackingService, TrackedLocation } from '../services/locationTrackingService';
 import PaymentModal from './PaymentModal';
 
 interface TourDetailsProps {
     tour: TourPackage;
+    user: User | null;
     onBack: () => void;
 }
 
@@ -18,7 +19,7 @@ interface DayLocation {
     error?: string;
 }
 
-const TourDetails: React.FC<TourDetailsProps> = ({ tour, onBack }) => {
+const TourDetails: React.FC<TourDetailsProps> = ({ tour, user, onBack }) => {
     const [dayLocations, setDayLocations] = useState<DayLocation[]>([]);
     const [showTrackModal, setShowTrackModal] = useState(false);
     const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -147,9 +148,11 @@ const TourDetails: React.FC<TourDetailsProps> = ({ tour, onBack }) => {
     };
 
     const getVisitedPlaces = () => {
-        return allTrackedLocations.sort((a, b) =>
-            new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-        );
+        return allTrackedLocations
+            .filter(loc => loc.tourId === tour.id)
+            .sort((a, b) =>
+                new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+            );
     };
 
     const openInGoogleMaps = (lat: number, lng: number) => {
@@ -183,8 +186,12 @@ const TourDetails: React.FC<TourDetailsProps> = ({ tour, onBack }) => {
                 {/* Left: Itinerary */}
                 <div className="lg:col-span-2 space-y-12">
                     <div className="flex items-center gap-4 mb-8">
-                        <h2 className="text-3xl font-black text-[#0c2d3a] tracking-tight uppercase">Itinerary</h2>
-                        <div className="h-1 flex-1 bg-slate-100 rounded-full"></div>
+                        {tour.itinerary && tour.itinerary.length > 0 && (
+                            <>
+                                <h2 className="text-3xl font-black text-[#0c2d3a] tracking-tight uppercase">Itinerary</h2>
+                                <div className="h-1 flex-1 bg-slate-100 rounded-full"></div>
+                            </>
+                        )}
 
                         {/* Track Button */}
                         <button
@@ -197,6 +204,18 @@ const TourDetails: React.FC<TourDetailsProps> = ({ tour, onBack }) => {
                             Track ({getVisitedPlaces().length})
                         </button>
                     </div>
+
+                    {tour.description && (
+                        <div className="bg-slate-50 rounded-[32px] p-8 border border-slate-100 shadow-sm animate-in fade-in slide-in-from-bottom-4 duration-700">
+                            <h3 className="text-xl font-extrabold text-[#0c2d3a] mb-4 flex items-center gap-3">
+                                Overview
+                                <span className="h-1 w-8 bg-indigo-600 rounded-full"></span>
+                            </h3>
+                            <p className="text-slate-600 leading-relaxed whitespace-pre-wrap text-sm">
+                                {tour.description}
+                            </p>
+                        </div>
+                    )}
 
                     <div className="space-y-16 relative before:absolute before:inset-0 before:ml-5 before:-z-10 before:w-1 before:bg-slate-100/50">
                         {tour.itinerary?.map((day, i) => {
@@ -262,7 +281,6 @@ const TourDetails: React.FC<TourDetailsProps> = ({ tour, onBack }) => {
                                                         <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-indigo-400 flex-shrink-0"></div>
                                                         <div className="space-y-1">
                                                             <div className="flex items-center gap-2">
-                                                                <span className="text-[10px] font-black text-indigo-500 uppercase tracking-wider">{act.time}</span>
                                                                 <h4 className="text-[14px] font-bold text-slate-800">{act.activity}</h4>
                                                             </div>
                                                             <p className="text-[12px] text-slate-500 leading-relaxed font-medium">{act.description}</p>
@@ -293,6 +311,37 @@ const TourDetails: React.FC<TourDetailsProps> = ({ tour, onBack }) => {
                             >
                                 Book This Package
                             </button>
+                            {(tour.location || tour.track) && (
+                                <div className="mt-8 pt-8 border-t border-white/10 space-y-4">
+                                    <p className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.3em] mb-2">Live Tour Status</p>
+                                    {tour.location && (
+                                        <div className="flex items-start gap-3">
+                                            <div className="w-8 h-8 rounded-lg bg-indigo-500/20 flex items-center justify-center flex-shrink-0">
+                                                <svg className="w-4 h-4 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                                </svg>
+                                            </div>
+                                            <div>
+                                                <p className="text-[9px] font-black text-white/40 uppercase tracking-wider">Current Location</p>
+                                                <p className="text-sm font-bold text-white">{tour.location}</p>
+                                            </div>
+                                        </div>
+                                    )}
+                                    {tour.track && (
+                                        <div className="flex items-start gap-3">
+                                            <div className="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
+                                                <svg className="w-4 h-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                                                </svg>
+                                            </div>
+                                            <div>
+                                                <p className="text-[9px] font-black text-white/40 uppercase tracking-wider">Trip Track</p>
+                                                <p className="text-[11px] font-medium text-white/80 italic">{tour.track}</p>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                             <div className="mt-8 pt-8 border-t border-white/10 space-y-4">
                                 <div className="flex items-center gap-3 text-white/60">
                                     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -329,8 +378,8 @@ const TourDetails: React.FC<TourDetailsProps> = ({ tour, onBack }) => {
                         <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-8 text-white">
                             <div className="flex items-center justify-between">
                                 <div>
-                                    <h3 className="text-3xl font-black tracking-tight uppercase mb-2">Your Journey Track</h3>
-                                    <p className="text-white/80 text-sm font-medium">Places you've visited on this tour</p>
+                                    <h3 className="text-3xl font-black tracking-tight uppercase mb-1">Your Journey Track</h3>
+                                    <p className="text-white/80 text-sm font-medium">{tour.title}</p>
                                 </div>
                                 <button
                                     onClick={() => setShowTrackModal(false)}
@@ -344,7 +393,26 @@ const TourDetails: React.FC<TourDetailsProps> = ({ tour, onBack }) => {
                         </div>
 
                         {/* Modal Content */}
-                        <div className="flex-1 overflow-y-auto p-8">
+                        <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
+                            {tour.track && (
+                                <div className="mb-10 bg-indigo-50 border border-indigo-100 p-6 rounded-3xl">
+                                    <div className="flex items-center gap-3 mb-3">
+                                        <div className="p-2 bg-indigo-600 rounded-lg">
+                                            <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                                            </svg>
+                                        </div>
+                                        <h4 className="text-sm font-black text-[#0c2d3a] uppercase tracking-widest">Planned Route</h4>
+                                    </div>
+                                    <p className="text-slate-600 font-bold italic text-lg ml-9">{tour.track}</p>
+                                </div>
+                            )}
+
+                            <div className="flex items-center gap-3 mb-6">
+                                <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Actual Visits Timeline</h4>
+                                <div className="h-px flex-1 bg-slate-100"></div>
+                            </div>
+                            
                             {getVisitedPlaces().length === 0 ? (
                                 <div className="text-center py-16">
                                     <div className="w-24 h-24 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -452,6 +520,7 @@ const TourDetails: React.FC<TourDetailsProps> = ({ tour, onBack }) => {
                 tourTitle={tour.title}
                 amount={tour.price}
                 tourId={tour.id}
+                user={user}
             />
         </div>
     );

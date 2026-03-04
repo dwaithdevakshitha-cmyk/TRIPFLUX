@@ -161,3 +161,22 @@ CREATE TABLE payouts (
     status VARCHAR(20),
     paid_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- =========================================
+-- 12) REFERRALS
+-- =========================================
+CREATE TABLE referrals (
+    id SERIAL UNIQUE,
+    referral_id VARCHAR(50) PRIMARY KEY,
+
+    referrer_id VARCHAR(50),
+    referred_user_id INT REFERENCES login_details(user_id),
+
+    referral_type VARCHAR(20) CHECK (referral_type IN ('user','associate')),
+
+    promo_code VARCHAR(50),
+
+    status VARCHAR(20) DEFAULT 'active',
+
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

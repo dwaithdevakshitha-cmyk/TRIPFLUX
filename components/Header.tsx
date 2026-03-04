@@ -10,9 +10,11 @@ interface HeaderProps {
   onLogout: () => void;
   onViewChange: (view: 'HOME' | 'INTERNATIONAL' | 'DOMESTIC' | 'PILGRIMAGE' | 'ABOUT' | 'CONTACT' | 'SIGNUP') => void;
   currentView: 'HOME' | 'INTERNATIONAL' | 'DOMESTIC' | 'PILGRIMAGE' | 'ABOUT' | 'CONTACT' | 'SIGNUP';
+  onProfileClick?: () => void;
+  onGoToDashboard?: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ onSignIn, onAdminClick, onAssociateLogin, user, onLogout, onViewChange, currentView }) => {
+const Header: React.FC<HeaderProps> = ({ onSignIn, onAdminClick, onAssociateLogin, user, onLogout, onViewChange, currentView, onProfileClick, onGoToDashboard }) => {
   return (
     <header className="sticky top-0 z-50 bg-[#0c2d3a] border-b border-white/10 shadow-lg">
       <div className="max-w-7xl mx-auto px-6 h-16 md:h-20 flex items-center justify-between">
@@ -39,18 +41,18 @@ const Header: React.FC<HeaderProps> = ({ onSignIn, onAdminClick, onAssociateLogi
         </nav>
 
         <div className="flex items-center gap-5">
-          <button onClick={onAdminClick} className="p-2 text-white/30 hover:text-white transition-colors">
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-            </svg>
-          </button>
+          {user?.role === 'admin' && (
+            <button onClick={onGoToDashboard} className="px-5 py-2 border border-indigo-500 text-indigo-400 text-[10px] font-black uppercase tracking-widest rounded hover:bg-indigo-500/10 transition-colors shadow-lg">
+              Dashboard
+            </button>
+          )}
           {user ? (
             <div className="flex items-center gap-4">
-              <div className="flex flex-col items-end hidden sm:flex">
-                <span className="text-white text-[10px] font-black tracking-widest uppercase">{user.name}</span>
-                <button onClick={onLogout} className="text-indigo-400 text-[9px] font-bold hover:text-indigo-300 tracking-widest uppercase">Logout</button>
+              <div className="flex flex-col items-end hidden sm:flex cursor-pointer" onClick={onProfileClick}>
+                <span className="text-white text-[10px] font-black tracking-widest uppercase hover:text-indigo-400 transition-colors">{user.name}</span>
+                <button onClick={(e) => { e.stopPropagation(); onLogout(); }} className="text-indigo-400 text-[9px] font-bold hover:text-indigo-300 tracking-widest uppercase mt-0.5">Logout</button>
               </div>
-              <div className="w-10 h-10 rounded-full border border-white/20 overflow-hidden shadow-lg shadow-black/20">
+              <div onClick={onProfileClick} className="w-10 h-10 rounded-full border border-white/20 overflow-hidden shadow-lg shadow-black/20 cursor-pointer hover:border-indigo-500 transition-colors">
                 <img src={user.avatar || `https://ui-avatars.com/api/?name=${user.name}&background=6366f1&color=fff`} alt={user.name} className="w-full h-full object-cover" />
               </div>
             </div>

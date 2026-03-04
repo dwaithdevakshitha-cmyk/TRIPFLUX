@@ -7,13 +7,13 @@ interface AdminLoginProps {
 }
 
 const AdminLogin: React.FC<AdminLoginProps> = ({ onSuccess, onCancel }) => {
-  const [passcode, setPasscode] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Default admin passcode - in production this would be validated via a secure backend
-    if (passcode === 'flux2025') {
+    if (email === 'admin@tripflux.com' && password === 'flux2025') {
       onSuccess();
     } else {
       setError(true);
@@ -39,27 +39,39 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onSuccess, onCancel }) => {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="space-y-2">
-            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Admin Passcode</label>
-            <input 
-              type="password"
-              value={passcode}
-              onChange={(e) => setPasscode(e.target.value)}
-              placeholder="••••••••"
-              className={`w-full px-6 py-4 bg-slate-800 border ${error ? 'border-red-500 focus:ring-red-500/20' : 'border-slate-700 focus:ring-indigo-500/20'} rounded-2xl outline-none focus:ring-4 transition-all text-white font-mono tracking-[0.5em] text-center`}
-              autoFocus
-            />
-            {error && <p className="text-red-500 text-[10px] font-black uppercase tracking-tighter text-center mt-2">Invalid Access Key</p>}
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Admin Email</label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="admin@tripflux.com"
+                className={`w-full px-6 py-4 bg-slate-800 border ${error ? 'border-red-500 focus:ring-red-500/20' : 'border-slate-700 focus:ring-indigo-500/20'} rounded-2xl outline-none focus:ring-4 transition-all text-white tracking-widest text-center`}
+                autoFocus
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Admin Password</label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                className={`w-full px-6 py-4 bg-slate-800 border ${error ? 'border-red-500 focus:ring-red-500/20' : 'border-slate-700 focus:ring-indigo-500/20'} rounded-2xl outline-none focus:ring-4 transition-all text-white font-mono tracking-[0.5em] text-center`}
+              />
+            </div>
+            {error && <p className="text-red-500 text-[10px] font-black uppercase tracking-tighter text-center mt-2">Invalid Credentials</p>}
           </div>
 
-          <button 
+          <button
             type="submit"
             className="w-full py-4 bg-indigo-600 text-white font-black rounded-2xl hover:bg-indigo-500 active:scale-95 transition-all shadow-xl shadow-indigo-500/20 cursor-pointer"
           >
             AUTHORIZE ACCESS
           </button>
-          
-          <button 
+
+          <button
             type="button"
             onClick={onCancel}
             className="w-full py-2 text-slate-500 text-xs font-bold hover:text-white transition-colors cursor-pointer"
@@ -67,10 +79,10 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onSuccess, onCancel }) => {
             Return to Public View
           </button>
         </form>
-        
+
         <div className="mt-10 pt-8 border-t border-slate-800 text-center">
           <p className="text-[10px] text-slate-600 font-bold uppercase tracking-widest">
-            Session Encrypted via TLS 1.3 <br/>
+            Session Encrypted via TLS 1.3 <br />
             Connected to Neon AWS us-east-1
           </p>
         </div>

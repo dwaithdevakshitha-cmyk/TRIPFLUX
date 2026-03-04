@@ -7,12 +7,13 @@ interface AssociateLoginProps {
 }
 
 const AssociateLogin: React.FC<AssociateLoginProps> = ({ onSuccess, onCancel }) => {
-    const [passcode, setPasscode] = useState('');
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
     const [error, setError] = useState(false);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (passcode === 'trips2025') {
+        if (email === 'associate@tripflux.com' && password === 'trips2025') {
             onSuccess();
         } else {
             setError(true);
@@ -38,18 +39,28 @@ const AssociateLogin: React.FC<AssociateLoginProps> = ({ onSuccess, onCancel }) 
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-6">
-                    <div className="space-y-2">
-                        <div className="flex justify-between items-center px-1">
-                            <label className="text-[10px] font-black text-white/30 uppercase tracking-widest">Access Key</label>
+                    <div className="space-y-4">
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-1">Associate Email</label>
+                            <input
+                                type="email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                placeholder="associate@tripflux.com"
+                                className={`w-full px-6 py-4 bg-white/5 border ${error ? 'border-red-500 focus:ring-red-500/20' : 'border-white/10 focus:ring-white/10'} rounded-2xl outline-none focus:ring-4 transition-all text-white tracking-widest text-center`}
+                                autoFocus
+                            />
                         </div>
-                        <input
-                            type="password"
-                            value={passcode}
-                            onChange={(e) => setPasscode(e.target.value)}
-                            placeholder="••••••••"
-                            className={`w-full px-6 py-4 bg-white/5 border ${error ? 'border-red-500 focus:ring-red-500/20' : 'border-white/10 focus:ring-white/10'} rounded-2xl outline-none focus:ring-4 transition-all text-white font-mono tracking-[0.5em] text-center`}
-                            autoFocus
-                        />
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-1">Password</label>
+                            <input
+                                type="password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                placeholder="••••••••"
+                                className={`w-full px-6 py-4 bg-white/5 border ${error ? 'border-red-500 focus:ring-red-500/20' : 'border-white/10 focus:ring-white/10'} rounded-2xl outline-none focus:ring-4 transition-all text-white font-mono tracking-[0.5em] text-center`}
+                            />
+                        </div>
                         {error && <p className="text-red-500 text-[10px] font-black uppercase tracking-tighter text-center mt-2 animate-bounce">Access Denied</p>}
                     </div>
 

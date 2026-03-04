@@ -1,6 +1,6 @@
-
 import React, { useState } from 'react';
 import { User } from '../types';
+import { storageService } from '../services/storageService';
 
 interface SignupPageProps {
     onBack: () => void;
@@ -9,7 +9,9 @@ interface SignupPageProps {
 
 const SignupPage: React.FC<SignupPageProps> = ({ onBack, onAuthSuccess }) => {
     const [loginType, setLoginType] = useState<'USER' | 'ASSOCIATE'>('USER');
-    const [isRegistering, setIsRegistering] = useState(false);
+    const [isRegistering, setIsRegistering] = useState(() => {
+        return new URLSearchParams(window.location.search).has('ref');
+    });
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
 
@@ -20,57 +22,171 @@ const SignupPage: React.FC<SignupPageProps> = ({ onBack, onAuthSuccess }) => {
     const [lastName, setLastName] = useState('');
     const [phone, setPhone] = useState('');
     const [dob, setDob] = useState('');
-    const [pan, setPan] = useState('');
-
+    const [panNumber, setPanNumber] = useState('');
+    const [selectedRole, setSelectedRole] = useState<'admin' | 'associate'>('associate');
+    const [referralCode, setReferralCode] = useState(() => {
+        return new URLSearchParams(window.location.search).get('ref') || '';
+    });
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
         setError('');
 
         const endpoint = isRegistering ? '/api/register' : '/api/login';
-        const role = loginType.toLowerCase();
+        const role = loginType === 'ASSOCIATE' ? selectedRole : loginType.toLowerCase();
 
         // Basic detection if the input is email or phone
         const isEmail = email.includes('@');
         const userEmail = isEmail ? email : `${email}@placeholder.com`; // DB needs unique email, we might need a better strategy here
         const userPhone = isEmail ? phone : email;
 
+        if (isRegistering) {
+            const phoneRegex = /^\d{10}$/;
+            const phoneToCheck = loginType === 'ASSOCIATE' ? phone : userPhone;
+            
+            if (loginType === 'ASSOCIATE' || !isEmail) {
+                if (!phoneRegex.test(phoneToCheck)) {
+                    setError('Phone number must be exactly 10 digits.');
+                    setIsLoading(false);
+                    return;
+                }
+            }
+
+            if (loginType === 'ASSOCIATE') {
+                if (!dob) {
+                    setError('Date of birth is required.');
+                    setIsLoading(false);
+                    return;
+                }
+                const birthDate = new Date(dob);
+                const today = new Date();
+                let age = today.getFullYear() - birthDate.getFullYear();
+                const m = today.getMonth() - birthDate.getMonth();
+                if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+                    age--;
+                }
+                if (age < 18) {
+                    setError('You must be at least 18 years old to register.');
+                    setIsLoading(false);
+                    return;
+                }
+            }
+        }
+
         const payload = isRegistering
             ? {
-                firstName: loginType === 'ASSOCIATE' ? firstName : 'User',
-                lastName: loginType === 'ASSOCIATE' ? lastName : '',
+                firstName: firstName || (loginType === 'USER' ? 'User' : ''),
+                lastName: lastName || '',
                 email: userEmail,
                 phone: userPhone,
                 password,
                 role,
-                panNumber: loginType === 'ASSOCIATE' ? pan : 'NA',
-                dateOfBirth: loginType === 'ASSOCIATE' ? dob : null
+                dateOfBirth: loginType === 'ASSOCIATE' ? dob : null,
+                panNumber: loginType === 'ASSOCIATE' ? panNumber : null,
+                referralCode
             }
             : { email: userEmail, password };
 
         try {
-            const response = await fetch(`http://localhost:3001${endpoint}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload),
-            });
+            let authUser: User | null = null;
+            let errorMessage = '';
 
-            const data = await response.json();
+            try {
+                const response = await fetch(`http://localhost:3001${endpoint}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                });
 
-            if (!response.ok) {
-                throw new Error(data.error || 'Something went wrong');
+                const data = await response.json();
+
+                if (!response.ok) {
+                    const apiError = typeof data.error === 'string' ? data.error : JSON.stringify(data.error || 'Something went wrong');
+                    throw new Error(apiError);
+                }
+
+                authUser = {
+                    id: data.user_id?.toString() || '',
+                    name: data.first_name || data.email?.split('@')[0].toUpperCase(),
+                    email: data.email,
+                    avatar: data.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=100&auto=format&fit=crop',
+                    role: data.role,
+                    promoCode: data.promo_code
+                };
+
+                // Ensure we always have a valid numeric DB user_id
+                if (!data.user_id && data.email) {
+                    try {
+                        const lookup = await fetch(`http://127.0.0.1:3001/api/users/by-email/${encodeURIComponent(data.email)}`);
+                        if (lookup.ok) {
+                            const dbUser = await lookup.json();
+                            if (dbUser.user_id) authUser.id = dbUser.user_id.toString();
+                        }
+                    } catch (_) { /* ignore */ }
+                }
+            } catch (err: any) {
+                console.warn("Backend unavailable or returned error, falling back to local storage:", err);
+
+                // FALLBACK: Local Storage / XML storage service
+                if (isRegistering) {
+                    let generatedPromoCode = '';
+                    if (role === 'associate' && dob) {
+                        const dobParts = dob.split('-'); // YYYY-MM-DD
+                        if (dobParts.length === 3) {
+                            generatedPromoCode = `${dobParts[2]}${dobParts[1]}${dobParts[0]}`; // DDMMYYYY
+                        } else {
+                            generatedPromoCode = `${dob.replace(/[^0-9]/g, '')}`;
+                        }
+                    }
+
+                    const userData = {
+                        emailOrPhone: userEmail,
+                        password: password,
+                        firstName: firstName || (loginType === 'USER' ? 'User' : ''),
+                        lastName: lastName || '',
+                        role,
+                        promoCode: generatedPromoCode,
+                        timestamp: new Date().toISOString()
+                    };
+                    storageService.saveCustomer(userData);
+
+                    authUser = {
+                        id: Date.now().toString(),
+                        name: firstName || userEmail.split('@')[0].toUpperCase(),
+                        email: userEmail,
+                        avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=100&auto=format&fit=crop',
+                        role,
+                        promoCode: generatedPromoCode || undefined
+                    };
+                } else {
+                    const customers = storageService.getCustomers();
+                    const user = customers.find((c: any) => c.emailOrPhone === userEmail && c.password === password);
+
+                    if (user) {
+                        authUser = {
+                            id: user.id || Date.now().toString(),
+                            name: user.firstName || user.name || userEmail.split('@')[0].toUpperCase(),
+                            email: user.emailOrPhone,
+                            avatar: user.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=100&auto=format&fit=crop',
+                            role: user.role,
+                            promoCode: user.promoCode
+                        };
+                    } else {
+                        errorMessage = 'Invalid email or password';
+                    }
+                }
             }
 
-            const authUser: User = {
-                id: data.user_id?.toString() || Math.random().toString(),
-                name: data.first_name || data.email?.split('@')[0].toUpperCase(),
-                email: data.email,
-                avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=100&auto=format&fit=crop'
-            };
+            if (authUser) {
+                onAuthSuccess(authUser);
+            } else if (errorMessage) {
+                setError(errorMessage);
+            }
 
-            onAuthSuccess(authUser);
         } catch (err: any) {
-            setError(err.message);
+            console.error("Auth error:", err);
+            const errMsg = err?.message || err?.error || err;
+            setError(typeof errMsg === 'string' ? errMsg : JSON.stringify(errMsg));
         } finally {
             setIsLoading(false);
         }
@@ -103,9 +219,9 @@ const SignupPage: React.FC<SignupPageProps> = ({ onBack, onAuthSuccess }) => {
                     </button>
                     <button
                         onClick={() => setLoginType('ASSOCIATE')}
-                        className={`relative flex-1 py-3.5 text-sm font-black tracking-widest uppercase transition-colors duration-300 z-10 ${loginType === 'ASSOCIATE' ? 'text-white' : 'text-white/40 hover:text-white/70'}`}
+                        className={`relative flex-1 py-3.5 text-xs font-black tracking-widest uppercase transition-colors duration-300 z-10 ${loginType === 'ASSOCIATE' ? 'text-white' : 'text-white/40 hover:text-white/70'}`}
                     >
-                        Associates {isRegistering ? 'Signup' : 'Login'}
+                        Admin/Associate {isRegistering ? 'Signup' : 'Login'}
                     </button>
                 </div>
 
@@ -116,7 +232,7 @@ const SignupPage: React.FC<SignupPageProps> = ({ onBack, onAuthSuccess }) => {
                 )}
 
                 <form onSubmit={handleSubmit} className="space-y-5">
-                    {isRegistering && loginType === 'ASSOCIATE' && (
+                    {isRegistering && (
                         <>
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
@@ -142,13 +258,25 @@ const SignupPage: React.FC<SignupPageProps> = ({ onBack, onAuthSuccess }) => {
                                     />
                                 </div>
                             </div>
+                        </>
+                    )}
+
+                    {isRegistering && loginType === 'ASSOCIATE' && (
+                        <>
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <label className="text-[11px] font-black text-white/40 uppercase tracking-[0.2em] ml-1">Phone Number</label>
                                     <input
-                                        type="tel"
+                                        type="text"
+                                        maxLength={10}
+                                        pattern="\d{10}"
                                         value={phone}
-                                        onChange={(e) => setPhone(e.target.value)}
+                                        onChange={(e) => {
+                                            let val = e.target.value.replace(/\D/g, '');
+                                            if (val.length > 10) val = val.slice(0, 10);
+                                            e.target.value = val;
+                                            setPhone(val);
+                                        }}
                                         placeholder="e.g. 9876543210"
                                         className="w-full px-6 py-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder:text-white/20 focus:outline-none focus:border-indigo-500 transition-all font-medium"
                                         required
@@ -158,6 +286,7 @@ const SignupPage: React.FC<SignupPageProps> = ({ onBack, onAuthSuccess }) => {
                                     <label className="text-[11px] font-black text-white/40 uppercase tracking-[0.2em] ml-1">Date of Birth</label>
                                     <input
                                         type="date"
+                                        max={new Date(new Date().setFullYear(new Date().getFullYear() - 18)).toISOString().split('T')[0]}
                                         value={dob}
                                         onChange={(e) => setDob(e.target.value)}
                                         className="w-full px-6 py-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder:[color-scheme:dark] focus:outline-none focus:border-indigo-500 transition-all font-medium"
@@ -165,26 +294,56 @@ const SignupPage: React.FC<SignupPageProps> = ({ onBack, onAuthSuccess }) => {
                                     />
                                 </div>
                             </div>
-                            <div className="space-y-2">
-                                <label className="text-[11px] font-black text-white/40 uppercase tracking-[0.2em] ml-1">PAN Card Number</label>
-                                <input
-                                    type="text"
-                                    value={pan}
-                                    onChange={(e) => setPan(e.target.value)}
-                                    placeholder="e.g. ABCDE1234F"
-                                    className="w-full px-6 py-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder:text-white/20 focus:outline-none focus:border-indigo-500 transition-all font-medium"
-                                    required
-                                />
+                            <div className="grid grid-cols-2 gap-4 mt-4">
+                                <div className="space-y-2">
+                                    <label className="text-[11px] font-black text-white/40 uppercase tracking-[0.2em] ml-1">PAN Card Number</label>
+                                    <input
+                                        type="text"
+                                        value={panNumber}
+                                        onChange={(e) => setPanNumber(e.target.value.toUpperCase())}
+                                        placeholder="ABCDE1234F"
+                                        maxLength={10}
+                                        className="w-full px-6 py-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder:text-white/20 focus:outline-none focus:border-indigo-500 transition-all font-medium"
+                                        required
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-[11px] font-black text-white/40 uppercase tracking-[0.2em] ml-1">Role</label>
+                                    <select
+                                        value={selectedRole}
+                                        onChange={(e) => setSelectedRole(e.target.value as 'admin' | 'associate')}
+                                        className="w-full px-6 py-4 bg-white/5 border border-white/10 rounded-2xl text-white focus:outline-none focus:border-indigo-500 transition-all font-medium appearance-none"
+                                    >
+                                        <option value="associate" className="bg-slate-900">Associate</option>
+                                        <option value="admin" className="bg-slate-900">Admin</option>
+                                    </select>
+                                </div>
                             </div>
                         </>
                     )}
+
+                    {isRegistering && (
+                        <div className="space-y-2">
+                            <label className="text-[11px] font-black text-white/40 uppercase tracking-[0.2em] ml-1">Referral / Promo Code (Optional)</label>
+                            <input
+                                type="text"
+                                value={referralCode}
+                                onChange={(e) => setReferralCode(e.target.value)}
+                                placeholder="e.g. ASC123456"
+                                className="w-full px-6 py-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder:text-white/20 focus:outline-none focus:border-indigo-500 transition-all font-medium"
+                            />
+                        </div>
+                    )}
+
                     <div className="space-y-2">
-                        <label className="text-[11px] font-black text-white/40 uppercase tracking-[0.2em] ml-1">Email / Phone Number</label>
+                        <label className="text-[11px] font-black text-white/40 uppercase tracking-[0.2em] ml-1">
+                            {isRegistering ? 'Email / Phone Number' : 'Email'}
+                        </label>
                         <input
                             type="text"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
-                            placeholder="e.g. wanderer@flux.com or 9876543210"
+                            placeholder={isRegistering ? "e.g. wanderer@flux.com or 9876543210" : "e.g. wanderer@flux.com"}
                             className="w-full px-6 py-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder:text-white/20 focus:outline-none focus:border-indigo-500 transition-all font-medium"
                             required
                         />

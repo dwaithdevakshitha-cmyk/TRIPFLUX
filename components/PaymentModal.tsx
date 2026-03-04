@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { dbService } from '../services/dbService';
+import { User } from '../types';
 
 interface PaymentModalProps {
     isOpen: boolean;
@@ -6,14 +8,17 @@ interface PaymentModalProps {
     tourTitle: string;
     amount: string;
     tourId: string;
+    user: User | null;
 }
 
 type PaymentMethod = 'UPI' | 'NETBANKING' | 'CARD';
 
-const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, tourTitle, amount, tourId }) => {
+const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, tourTitle, amount, tourId, user }) => {
     const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('UPI');
     const [isProcessing, setIsProcessing] = useState(false);
     const [paymentSuccess, setPaymentSuccess] = useState(false);
+    const [travelDate, setTravelDate] = useState('');
+    const [promoCode, setPromoCode] = useState(user?.promoCode || '');
 
     // UPI State
     const [upiId, setUpiId] = useState('');
@@ -44,19 +49,58 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, tourTitle,
     if (!isOpen) return null;
 
     const handlePayment = async () => {
+        if (!user) {
+            alert('Please login to book a package');
+            return;
+        }
+
+        if (!travelDate) {
+            alert('Please select a travel date');
+            return;
+        }
+
         setIsProcessing(true);
 
-        // Simulate payment processing
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        try {
+            // Resolve real DB user_id before booking
+            // If user.id is a large timestamp (from localStorage fallback), look up by email
+            let resolvedUserId: string | number = user.id;
+            const numericId = parseInt(user.id);
+            const isTimestampId = !isNaN(numericId) && numericId > 2147483647;
+            const isNonNumericId = isNaN(numericId);
 
-        setIsProcessing(false);
-        setPaymentSuccess(true);
+            if ((isTimestampId || isNonNumericId) && user.email) {
+                const realUserId = await dbService.resolveUserIdByEmail(user.email);
+                if (realUserId) {
+                    resolvedUserId = realUserId;
+                }
+            }
 
-        // Auto close after success
-        setTimeout(() => {
-            setPaymentSuccess(false);
-            onClose();
-        }, 3000);
+            // Create booking in database
+            await dbService.createBooking({
+                userId: resolvedUserId,
+                userEmail: user.email,
+                packageId: tourId,
+                travelDate: travelDate,
+                totalAmount: amount,
+                promoCode: promoCode
+            });
+
+            // Simulate payment processing
+            await new Promise(resolve => setTimeout(resolve, 2000));
+
+            setIsProcessing(false);
+            setPaymentSuccess(true);
+
+            // Auto close after success
+            setTimeout(() => {
+                setPaymentSuccess(false);
+                onClose();
+            }, 3000);
+        } catch (error: any) {
+            setIsProcessing(false);
+            alert(error.message || 'Booking failed. Please try again.');
+        }
     };
 
     const formatCardNumber = (value: string) => {
@@ -125,6 +169,33 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, tourTitle,
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
                             </svg>
                         </button>
+                    </div>
+                </div>
+
+                {/* Booking Options */}
+                <div className="bg-slate-50 p-6 border-b border-slate-200">
+                    <div className="grid grid-cols-2 gap-6">
+                        <div>
+                            <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Travel Date</label>
+                            <input
+                                type="date"
+                                value={travelDate}
+                                onChange={(e) => setTravelDate(e.target.value)}
+                                min={new Date().toISOString().split('T')[0]}
+                                className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl focus:border-indigo-500 focus:outline-none font-bold text-sm"
+                                required
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Promo Code (Optional)</label>
+                            <input
+                                type="text"
+                                value={promoCode}
+                                onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+                                placeholder="E.G. SAVE10"
+                                className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl focus:border-indigo-500 focus:outline-none font-bold text-sm"
+                            />
+                        </div>
                     </div>
                 </div>
 

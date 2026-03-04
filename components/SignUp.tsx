@@ -9,24 +9,95 @@ interface SignUpProps {
 const SignUp: React.FC<SignUpProps> = ({ onBack, onSuccess }) => {
     const [isSignIn, setIsSignIn] = useState(false);
     const [formData, setFormData] = useState({
+        firstName: '',
+        lastName: '',
+        phoneNumber: '',
+        dateOfBirth: '',
+        role: 'user',
+        promoCode: '',
         emailOrPhone: '',
         password: '',
         confirmPassword: ''
     });
     const [error, setError] = useState('');
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        setError('');
+
         if (!formData.emailOrPhone || !formData.password) {
             setError('Please fill in all fields');
             return;
         }
-        if (!isSignIn && !formData.confirmPassword) {
-            setError('Please confirm your password');
-            return;
-        }
-        if (!isSignIn && formData.password !== formData.confirmPassword) {
-            setError('Passwords do not match');
+
+        if (!isSignIn) {
+            if (!formData.firstName || !formData.lastName || !formData.phoneNumber || !formData.dateOfBirth) {
+                setError('Please fill in all fields');
+                return;
+            }
+
+            if (!formData.confirmPassword) {
+                setError('Please confirm your password');
+                return;
+            }
+
+            if (formData.password !== formData.confirmPassword) {
+                setError('Passwords do not match');
+                return;
+            }
+
+            const phoneRegex = /^\d{10}$/;
+            if (!phoneRegex.test(formData.phoneNumber)) {
+                setError('Phone number must be exactly 10 digits.');
+                return;
+            }
+
+            const birthDate = new Date(formData.dateOfBirth);
+            const today = new Date();
+            let age = today.getFullYear() - birthDate.getFullYear();
+            const m = today.getMonth() - birthDate.getMonth();
+            if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+                age--;
+            }
+            if (age < 18) {
+                setError('You must be at least 18 years old to register.');
+                return;
+            }
+
+            try {
+                const res = await fetch('http://localhost:3001/api/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        firstName: formData.firstName,
+                        lastName: formData.lastName,
+                        email: formData.emailOrPhone,
+                        phone: formData.phoneNumber,
+                        password: formData.password,
+                        role: formData.role,
+                        dateOfBirth: formData.dateOfBirth,
+                        referralCode: formData.promoCode
+                    })
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    onSuccess({
+                        id: data.user_id,
+                        name: `${data.first_name} ${data.last_name || ''}`.trim(),
+                        email: data.email,
+                        role: data.role,
+                        promoCode: data.associate_id || data.custom_user_id,
+                        avatar: data.avatar || `https://ui-avatars.com/api/?name=${data.first_name}&background=6366f1&color=fff`
+                    });
+                } else {
+                    const errData = await res.json();
+                    setError(errData.error || 'Failed to register.');
+                }
+            } catch (err) {
+                console.error("Signup Error:", err);
+                setError('An error occurred during registration.');
+            }
             return;
         }
 
@@ -62,12 +133,111 @@ const SignUp: React.FC<SignUpProps> = ({ onBack, onSuccess }) => {
                     <p className="text-slate-500 font-medium mt-2">{isSignIn ? 'Welcome back to TripFlux' : 'Join the future of travel intelligence'}</p>
                 </div>
 
+                <div className="flex bg-slate-100 p-1 mb-8 rounded-2xl relative">
+                    <button
+                        className={`flex-1 py-3 text-xs font-black uppercase tracking-widest rounded-xl transition-all ${!isSignIn ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-500 hover:text-slate-900'}`}
+                        onClick={() => setIsSignIn(false)}
+                    >
+                        User Signup
+                    </button>
+                    <button
+                        className={`flex-1 py-3 text-xs font-black uppercase tracking-widest rounded-xl transition-all ${isSignIn ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-500 hover:text-slate-900'}`}
+                        onClick={() => setIsSignIn(true)}
+                    >
+                        Admin/Associate Signup
+                    </button>
+                </div>
+
                 <form onSubmit={handleSubmit} className="space-y-6">
+                    {!isSignIn && (
+                        <>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-1.5">
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">First Name</label>
+                                    <input
+                                        type="text"
+                                        placeholder="First Name"
+                                        className="w-full px-6 py-4 bg-slate-50 border-2 border-slate-50 rounded-2xl focus:bg-white focus:border-indigo-600 focus:outline-none transition-all font-bold text-slate-700"
+                                        value={formData.firstName}
+                                        onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                                        required
+                                    />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Last Name</label>
+                                    <input
+                                        type="text"
+                                        placeholder="Last Name"
+                                        className="w-full px-6 py-4 bg-slate-50 border-2 border-slate-50 rounded-2xl focus:bg-white focus:border-indigo-600 focus:outline-none transition-all font-bold text-slate-700"
+                                        value={formData.lastName}
+                                        onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                                        required
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-1.5">
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Phone Number</label>
+                                    <input
+                                        type="text"
+                                        maxLength={10}
+                                        pattern="\d{10}"
+                                        placeholder="10 digit number"
+                                        className="w-full px-6 py-4 bg-slate-50 border-2 border-slate-50 rounded-2xl focus:bg-white focus:border-indigo-600 focus:outline-none transition-all font-bold text-slate-700"
+                                        value={formData.phoneNumber}
+                                        onChange={(e) => {
+                                            let val = e.target.value.replace(/\D/g, '');
+                                            if (val.length > 10) val = val.slice(0, 10);
+                                            e.target.value = val; // Force DOM node override to stop bypasses
+                                            setFormData({ ...formData, phoneNumber: val });
+                                        }}
+                                        required
+                                    />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Date of Birth</label>
+                                    <input
+                                        type="date"
+                                        max={new Date(new Date().setFullYear(new Date().getFullYear() - 18)).toISOString().split('T')[0]}
+                                        className="w-full px-6 py-4 bg-slate-50 border-2 border-slate-50 rounded-2xl focus:bg-white focus:border-indigo-600 focus:outline-none transition-all font-bold text-slate-700"
+                                        value={formData.dateOfBirth}
+                                        onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })}
+                                        required
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Role</label>
+                                <select
+                                    className="w-full px-6 py-4 bg-slate-50 border-2 border-slate-50 rounded-2xl focus:bg-white focus:border-indigo-600 focus:outline-none transition-all font-bold text-slate-700 appearance-none"
+                                    value={formData.role}
+                                    onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                                >
+                                    <option value="user">User</option>
+                                    <option value="associate">Associate</option>
+                                </select>
+                            </div>
+
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Referral / Promo Code (Optional)</label>
+                                <input
+                                    type="text"
+                                    placeholder="e.g. ASC123456"
+                                    className="w-full px-6 py-4 bg-slate-50 border-2 border-slate-50 rounded-2xl focus:bg-white focus:border-indigo-600 focus:outline-none transition-all font-bold text-slate-700"
+                                    value={formData.promoCode}
+                                    onChange={(e) => setFormData({ ...formData, promoCode: e.target.value })}
+                                />
+                            </div>
+                        </>
+                    )}
+
                     <div className="space-y-1.5">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Email or Phone Number</label>
+                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">{isSignIn ? 'Email or Phone Number' : 'Email'}</label>
                         <input
                             type="text"
-                            placeholder="e.g. alex@tripflux.ai"
+                            placeholder={isSignIn ? "e.g. alex@tripflux.ai" : "e.g. email@example.com"}
                             className="w-full px-6 py-4 bg-slate-50 border-2 border-slate-50 rounded-2xl focus:bg-white focus:border-indigo-600 focus:outline-none transition-all font-bold text-slate-700"
                             value={formData.emailOrPhone}
                             onChange={(e) => setFormData({ ...formData, emailOrPhone: e.target.value })}
@@ -109,12 +279,7 @@ const SignUp: React.FC<SignUpProps> = ({ onBack, onSuccess }) => {
                 </form>
 
                 <div className="mt-6 text-center">
-                    <button
-                        onClick={() => setIsSignIn(!isSignIn)}
-                        className="text-[10px] font-black text-indigo-600 uppercase tracking-widest hover:underline transition-colors"
-                    >
-                        {isSignIn ? "New to TripFlux? Create Account" : "Already have an account? Sign In"}
-                    </button>
+                    {/* Replaced logic since we use internal tabs now, kept for fallback visual spacing if desired */}
                 </div>
 
                 <div className="mt-8 text-center pt-6 border-t border-slate-50">

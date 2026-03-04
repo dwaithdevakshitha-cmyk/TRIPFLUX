@@ -11,8 +11,8 @@ import AssociateLogin from './components/AssociateLogin';
 import TourCard from './components/TourCard';
 import { AppStatus, TourPackage, User } from './types';
 import { dbService } from './services/dbService';
-
 import SignupPage from './components/SignupPage';
+import ProfileDashboard from './components/ProfileDashboard';
 
 
 type ViewType = 'HOME' | 'INTERNATIONAL' | 'DOMESTIC' | 'PILGRIMAGE' | 'ABOUT' | 'CONTACT' | 'TOUR_DETAILS' | 'SIGNUP';
@@ -676,7 +676,7 @@ const DEFAULT_TOURS: TourPackage[] = [
     price: '₹28,000',
     priceBasis: 'Per Person',
     duration: '12 Nights - 13 Days',
-    image: '/assets/images/NORTH INDIA.jpg',
+    image: '/assets/images/NORTH INDIA SPECIAL PACKAGE.jpg',
     dates: '2025 Flexible',
     highlights: ['Delhi', 'Amritsar', 'Wagah Border', 'Jammu', 'Dalhousie', 'Khajjiar', 'Dharamshala', 'McLeod Ganj', 'Chamunda Devi', 'Jwalamukhi', 'Chintapurni', 'Naina Devi', 'Chandigarh', 'Kurukshetra'],
     features: ['AC Vehicle road transportation', 'Breakfast – Lunch – Dinner', 'AC Accommodation (Twin Sharing)', 'Daily mineral water bottle'],
@@ -760,7 +760,7 @@ const DEFAULT_TOURS: TourPackage[] = [
     price: '₹25,000',
     priceBasis: 'Per Person',
     duration: '11 Nights - 12 Days',
-    image: '/assets/images/NAIMISARANYAM KASHI-GAYA.jpg',
+    image: '/assets/images/NAIMISARANYAM KASHI-GAYA SPECIAL.jpg',
     dates: '2025 Flexible',
     highlights: ['Naimisaranyam', 'Kashi Vishwanath', 'Gaya Vishnu Pada', 'Ayodhya Ram Janmabhoomi', 'Prayagraj Sangam', 'Bodhgaya', 'Vindhyachal', 'Sitamarhi'],
     features: ['AC Vehicle road transportation', 'Breakfast – Lunch – Dinner', 'AC Accommodation (Twin Sharing)', 'Daily mineral water bottle'],
@@ -1154,7 +1154,7 @@ const DEFAULT_TOURS: TourPackage[] = [
     price: '₹22,000',
     priceBasis: 'Per Person',
     duration: '7 Nights - 8 Days',
-    image: '/assets/images/TAMIL NADU.jpg',
+    image: '/assets/images/TAMIL NADU SPECIAL PACKAGE.jpg',
     dates: '2025 Flexible',
     highlights: ['Madurai Meenakshi Temple', 'Rameswaram Spatika Lingam', 'Kanyakumari Sunrise & Vivekananda Rock', 'Tiruvannamalai Arunachaleswarar', 'Chidambaram Natarajar', 'Tanjavur Brihadisvara', 'Srirangam Ranganathaswamy', 'Kanchipuram Kamakshi'],
     features: ['AC Vehicle road transportation', 'Breakfast – Lunch – Dinner', 'Deluxe Accommodation', 'Daily one mineral water bottle'],
@@ -1218,7 +1218,7 @@ const DEFAULT_TOURS: TourPackage[] = [
     price: '₹32,500',
     priceBasis: 'Per Person',
     duration: '6 Nights - 7 Days',
-    image: '/assets/images/SHIMLA-MANALI.jpg',
+    image: '/assets/images/SHIMLA-MANALI SPECIAL PACKAGE.jpg',
     dates: '2025 Flexible',
     highlights: ['Shimla Mall Road', 'Kufri View Point', 'Manali Ice Point', 'Rohtang Pass (Optional)', 'Kullu River Rafting', 'Chandigarh Rock Garden', 'Kurukshetra Brahma Sarovar', 'Delhi Local Sightseeing'],
     features: ['Luxury Accommodation', 'AC Vehicle for road transportation', 'Breakfast – Lunch – Dinner', 'Daily Mineral water Bottle', 'Toll Gate & Parking Included'],
@@ -1389,7 +1389,7 @@ const DEFAULT_TOURS: TourPackage[] = [
     price: '₹14,000',
     priceBasis: 'Per Person',
     duration: '3 Nights - 4 Days',
-    image: '/assets/images/KASHI-ALLAHABAD.jpg',
+    image: '/assets/images/KASHI-ALLAHABAD SPECIAL.jpg',
     dates: '2025 Flexible',
     highlights: ['Kashi Vishwanath Temple', 'Triveni Sangam', 'Anand Bhawan', 'Sarnath Sightseeing', 'Ganga Aarti'],
     features: ['AC Vehicle road transportation', 'Breakfast – Lunch – Dinner', 'AC Accommodation (Twin Sharing)', 'Daily one mineral water bottle'],
@@ -1624,7 +1624,7 @@ const DEFAULT_TOURS: TourPackage[] = [
     price: '₹24,000',
     priceBasis: 'Per Person',
     duration: '6 Nights - 7 Days',
-    image: '/assets/images/GANGTOK-DARJEELING.jpg',
+    image: '/assets/images/GANGTOK-DARJEELING SPECIAL PACKAGE.jpg',
     dates: '2025 Flexible',
     highlights: ['Tiger Hill Sunrise', 'Tsomgo Lake', 'Baba Harbajan Singh Temple', 'Mirik Lake', 'Gangtok Local Sights', 'Darjeeling Local Sights'],
     features: ['Deluxe Accommodation', 'Vehicle for road transportation', 'Breakfast, Lunch, Dinner included', 'Daily one mineral water bottle'],
@@ -1680,7 +1680,7 @@ const DEFAULT_TOURS: TourPackage[] = [
     price: '₹28,500',
     priceBasis: 'Per Person',
     duration: '6 Nights - 7 Days',
-    image: '/assets/images/GUWAHATI.jpg',
+    image: '/assets/images/GUWAHATI-SPECIAL PACKAGE.jpg',
     dates: '2025 Flexible',
     highlights: ['Umium Lake View Point', 'Elephant Falls', 'Shillong Peak', 'Double Decker Living Root Bridge', 'Seven Sisters Waterfalls', 'Mawsmai Cave', 'Kamakya Devi Temple'],
     features: ['Deluxe Accommodation', 'Vehicle for road transportation', 'Breakfast, Lunch, Dinner included', 'Daily one mineral water bottle'],
@@ -1737,7 +1737,7 @@ const DEFAULT_TOURS: TourPackage[] = [
     price: '₹55,000',
     priceBasis: 'Per Person',
     duration: '13 Nights - 14 Days',
-    image: '/assets/images/AMARNATH YATRA.jpg',
+    image: '/assets/images/AMARNATH YATRA SPECIAL.jpg',
     dates: '2025 Flexible',
     highlights: ['Amarnath Cave Darshan', 'Vaishno Devi', 'Golden Temple Amritsar', 'Wagah Border', 'Srinagar Shikara', 'Ashtavigna Devi Temples', 'Kurukshetra'],
     features: ['Deluxe Accommodation', 'AC Vehicle in plains', 'Breakfast, Lunch, Dinner included', 'Daily one mineral water bottle'],
@@ -1827,7 +1827,18 @@ import TourDetails from './components/TourDetails';
 import SignUp from './components/SignUp';
 
 const App: React.FC = () => {
-  const [status, setStatus] = useState<AppStatus>(AppStatus.IDLE);
+  const [showProfile, setShowProfile] = useState(false);
+  const [status, setStatus] = useState<AppStatus>(() => {
+    try {
+      const saved = localStorage.getItem('tripflux_user');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        // Only auto-login to admin if hash is #admin, otherwise stay in IDLE (Home)
+        if (parsed.role === 'admin' && window.location.hash === '#admin') return AppStatus.ADMIN;
+      }
+    } catch(e) {}
+    return AppStatus.IDLE;
+  });
   const [user, setUser] = useState<User | null>(() => {
     try {
       const saved = localStorage.getItem('tripflux_user');
@@ -1837,6 +1848,10 @@ const App: React.FC = () => {
     }
   });
   const [currentView, setCurrentView] = useState<ViewType>(() => {
+    // Check if we have a referral link
+    const params = new URLSearchParams(window.location.search);
+    if (params.has('ref')) return 'SIGNUP';
+    
     try {
       const saved = localStorage.getItem('tripflux_user');
       return saved ? 'HOME' : 'SIGNUP';
@@ -1854,19 +1869,71 @@ const App: React.FC = () => {
     }
   }, [user]);
 
+  // Session validation: fix stale localStorage IDs (timestamp-based fallback IDs)
+  useEffect(() => {
+    const validateAndFixSession = async () => {
+      if (!user) return;
+      const numericId = parseInt(user.id);
+      const isStaleId = isNaN(numericId) || numericId > 2147483647;
+      const needsPromoCode = user.role === 'associate' && (!user.promoCode || user.promoCode === 'PENDING');
+      
+      if ((isStaleId || needsPromoCode) && user.email) {
+        try {
+          const response = await fetch(`http://127.0.0.1:3001/api/users/by-email/${encodeURIComponent(user.email)}`);
+          if (response.ok) {
+            const dbUser = await response.json();
+            if (dbUser.user_id) {
+              // Update user ID and promo code from DB
+              const fixedUser = { 
+                ...user, 
+                id: dbUser.user_id.toString(),
+                promoCode: dbUser.promo_code || user.promoCode 
+              };
+              setUser(fixedUser);
+              console.log('[Session Fix] Updated user from DB:', dbUser.user_id);
+            }
+          }
+        } catch (e) {
+          // Backend not available — keep stale ID, booking flow will still handle it gracefully
+        }
+      }
+    };
+    validateAndFixSession();
+  // Only run once on mount (when user first loads from localStorage)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Enforce Sign Up before accessing any content
   useEffect(() => {
+    // Protect admin routes
+    if (status === AppStatus.ADMIN && user?.role !== 'admin') {
+      setStatus(AppStatus.IDLE);
+      setCurrentView('HOME');
+      return;
+    }
+
     // If no user and not on white-listed pages, force SIGNUP
     if (!user &&
       currentView !== 'SIGNUP' &&
-      status !== AppStatus.ADMIN &&
       status !== AppStatus.ADMIN_LOGIN) {
-      setCurrentView('SIGNUP');
+      // Allow status === AppStatus.ADMIN_LOGIN to show without user.
+      // But if they are just AppStatus.ADMIN and no user, redirect to SIGNUP
+      if (status !== AppStatus.ADMIN) {
+        setCurrentView('SIGNUP');
+      } else {
+        // status is ADMIN but no user, they shouldn't be here
+        setStatus(AppStatus.IDLE);
+        setCurrentView('SIGNUP');
+      }
     }
 
-    // Safety: If user exists and we are still on SIGNUP, go HOME
+    // Safety: If user exists and we are still on SIGNUP, go to proper dashboard
     if (user && currentView === 'SIGNUP') {
-      setCurrentView('HOME');
+      if (user.role === 'admin') {
+        setStatus(AppStatus.ADMIN);
+      } else {
+        setCurrentView('HOME');
+      }
     }
   }, [user, currentView, status]);
 
@@ -1899,38 +1966,64 @@ const App: React.FC = () => {
   const contactEmails = ["info@tripfux.com", "info@mripl.com"];
 
   // Defined handleAuthSuccess to update the user state and fix the reference error
-  const handleAuthSuccess = (user: User) => {
-    setUser(user);
-    setCurrentView('HOME'); // Redirect to home after successful auth
+  const handleAuthSuccess = async (authUser: User) => {
+    // If the incoming user.id looks like a stale timestamp, resolve via email
+    const numericId = parseInt(authUser.id);
+    const isStaleId = isNaN(numericId) || numericId > 2147483647;
+    if (isStaleId && authUser.email) {
+      try {
+        const response = await fetch(`http://127.0.0.1:3001/api/users/by-email/${encodeURIComponent(authUser.email)}`);
+        if (response.ok) {
+          const dbUser = await response.json();
+          if (dbUser.user_id) {
+            authUser = { 
+              ...authUser, 
+              id: dbUser.user_id.toString(),
+              promoCode: dbUser.promo_code || authUser.promoCode
+            };
+          }
+        }
+      } catch (e) { /* keep original if backend down */ }
+    }
+    setUser(authUser);
+    if (authUser.role === 'admin') {
+      setStatus(AppStatus.ADMIN);
+    } else {
+      setCurrentView('HOME');
+    }
   };
 
   useEffect(() => {
     const loadTours = async () => {
       try {
-        const dbTours = await dbService.getSignatureTours();
-        // Merge DB tours with default tours. 
-        // We prioritize DEFAULT_TOURS so that code updates (like itineraries) are immediately visible.
-        const combined = [...dbTours];
-        DEFAULT_TOURS.forEach(defTour => {
-          const index = combined.findIndex(t => t.id === defTour.id);
-          if (index !== -1) {
-            combined[index] = defTour; // Prioritize the hardcoded "Clone" data
-          } else {
-            combined.push(defTour);
-          }
-        });
-        setSignatureTours(combined);
+        const allAdminTours = await dbService.getPackagesAdmin();
+        const activeTours = await dbService.getPackages();
+        
+        // If the database has ANY packages at all (even if they are all inactive),
+        // we should respect the database as the "Source of Truth" and stop using hardcoded fallbacks.
+        if (allAdminTours && allAdminTours.length > 0) {
+          setSignatureTours(activeTours);
+        } else {
+          // Only fallback to hardcoded list if database is completely empty (no packages created yet)
+          setSignatureTours(DEFAULT_TOURS);
+        }
       } catch (err) {
+        console.warn("Using fallback tours due to fetch error", err);
         setSignatureTours(DEFAULT_TOURS);
       } finally {
         setIsToursLoading(false);
       }
     };
     loadTours();
-  }, []);
+  }, [status]);
 
   const getToursByCategory = (category: string) => {
-    return signatureTours.filter(t => t.category === category);
+    return signatureTours.filter(t => {
+      if (category === 'Pilgrimage') {
+        return t.category === 'Pilgrimage' || t.category === 'Temple';
+      }
+      return t.category === category;
+    });
   };
 
   const renderHome = () => (
@@ -2072,7 +2165,7 @@ const App: React.FC = () => {
   return (
     <div className="min-h-screen bg-white font-sans">
       {/* Top Banner and Header - Hidden on SIGNIFICANT pages or if not logged in */}
-      {currentView !== 'TOUR_DETAILS' && currentView !== 'SIGNUP' && (
+      {currentView !== 'TOUR_DETAILS' && currentView !== 'SIGNUP' && status !== AppStatus.ADMIN && (
         <>
           <div className="bg-[#0c2d3a] text-white py-1.5 px-6 flex justify-center items-center text-[10px] font-bold border-b border-white/5 space-x-4">
             <span className="opacity-80">== WELCOME TO TRIPFLUX ==</span>
@@ -2087,6 +2180,8 @@ const App: React.FC = () => {
             onAdminClick={() => { window.location.hash = 'admin'; setStatus(AppStatus.ADMIN_LOGIN); }}
             onAssociateLogin={() => { setCurrentView('SIGNUP'); window.scrollTo(0, 0); }}
             currentView={currentView}
+            onProfileClick={() => setShowProfile(true)}
+            onGoToDashboard={() => { window.location.hash = 'admin'; setStatus(AppStatus.ADMIN); }}
           />
         </>
       )}
@@ -2096,12 +2191,12 @@ const App: React.FC = () => {
       ) : status === AppStatus.ASSOCIATE_LOGIN ? (
         <AssociateLogin onSuccess={() => setStatus(AppStatus.IDLE)} onCancel={() => setStatus(AppStatus.IDLE)} />
       ) : status === AppStatus.ADMIN ? (
-        <AdminDashboard onAddTour={async (t) => { await dbService.saveTour(t); setSignatureTours([t, ...signatureTours]); }} onClose={() => { window.location.hash = ''; setStatus(AppStatus.IDLE); }} />
+        <AdminDashboard onClose={() => { window.location.hash = ''; setStatus(AppStatus.IDLE); setCurrentView('HOME'); }} onLogout={() => { window.location.hash = ''; setStatus(AppStatus.IDLE); setUser(null); setCurrentView('SIGNUP'); localStorage.removeItem('tripflux_user'); }} />
       ) : (
         currentView === 'SIGNUP' ? (
-          <SignUp onBack={() => { }} onSuccess={(user) => { setUser(user); setCurrentView('HOME'); }} />
+          <SignupPage onBack={() => setCurrentView('HOME')} onAuthSuccess={handleAuthSuccess} />
         ) : currentView === 'TOUR_DETAILS' && selectedTour ? (
-          <TourDetails tour={selectedTour} onBack={() => setCurrentView('INTERNATIONAL')} />
+          <TourDetails tour={selectedTour} user={user} onBack={() => setCurrentView('INTERNATIONAL')} />
         ) : (
           <main className="min-h-screen bg-white">
             {currentView === 'HOME' && renderHome()}
@@ -2168,6 +2263,7 @@ const App: React.FC = () => {
         )
       )}
 
+      {showProfile && user && <ProfileDashboard user={user} onClose={() => setShowProfile(false)} onSignOut={() => { setShowProfile(false); setUser(null); setCurrentView('SIGNUP'); }} onAccountUpdate={(updatedUser) => setUser(updatedUser)} />}
       <AuthModal isOpen={false} onClose={() => { }} onAuthSuccess={handleAuthSuccess} />
       <MobileNav onHome={() => setCurrentView('HOME')} onAdminClick={() => { window.location.hash = 'admin'; setStatus(AppStatus.ADMIN_LOGIN); }} />
     </div>
