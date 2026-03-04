@@ -92,7 +92,7 @@ const SignupPage: React.FC<SignupPageProps> = ({ onBack, onAuthSuccess }) => {
             let errorMessage = '';
 
             try {
-                const response = await fetch(`http://localhost:3001${endpoint}`, {
+                const response = await fetch(`http://127.0.0.1:3001${endpoint}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload),

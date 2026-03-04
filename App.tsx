@@ -1850,7 +1850,7 @@ const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<ViewType>(() => {
     // Check if we have a referral link
     const params = new URLSearchParams(window.location.search);
-    if (params.has('ref')) return 'SIGNUP';
+    if (window.location.href.includes('ref=')) return 'SIGNUP';
     
     try {
       const saved = localStorage.getItem('tripflux_user');
@@ -1928,7 +1928,9 @@ const App: React.FC = () => {
     }
 
     // Safety: If user exists and we are still on SIGNUP, go to proper dashboard
-    if (user && currentView === 'SIGNUP') {
+    // BUT allow staying on SIGNUP if it's a referral link (so users can test/view the link)
+    const isReferralLink = window.location.href.includes('ref=');
+    if (user && currentView === 'SIGNUP' && !isReferralLink) {
       if (user.role === 'admin') {
         setStatus(AppStatus.ADMIN);
       } else {
