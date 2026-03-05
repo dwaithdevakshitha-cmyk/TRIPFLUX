@@ -64,7 +64,7 @@ app.get('/api/packages', async (req, res) => {
       ORDER BY package_id DESC
     `;
     const result = await pool.query(query);
-    
+
     // Format JSON fields and price back to strings if necessary
     const formatted = result.rows.map(row => ({
       ...row,
@@ -94,10 +94,10 @@ app.post('/api/register', async (req, res) => {
       return res.status(400).json({ error: 'Phone number must be exactly 10 digits.' });
     }
   } else if (role === 'user' && (!phone || phone.trim() === '')) {
-     // For user with no phone, verify they have an email
-     if (!email || email.trim() === '' || email.includes('@placeholder.com')) {
-        return res.status(400).json({ error: 'Either a valid email or phone number is required.' });
-     }
+    // For user with no phone, verify they have an email
+    if (!email || email.trim() === '' || email.includes('@placeholder.com')) {
+      return res.status(400).json({ error: 'Either a valid email or phone number is required.' });
+    }
   }
 
   // Backend Validation: Age 18+
@@ -147,14 +147,13 @@ app.post('/api/register', async (req, res) => {
 
       if (referrerResult.rows.length > 0) {
         const referrerId = referrerResult.rows[0].user_id;
-        const referrerIdStr = `refr${referrerId}`;
 
         // Insert into referrals table
         const refResult = await pool.query(`
           INSERT INTO referrals (referral_id, referrer_id, referred_user_id, referral_type, promo_code)
           VALUES ('temp', $1, $2, $3, $4)
           RETURNING id
-        `, [referrerIdStr, newUser.user_id, role, referralCode]);
+        `, [referrerId, newUser.user_id, role, referralCode]);
 
         const seqId = refResult.rows[0].id;
         const referralIdStr = `refl${seqId}`;
@@ -165,6 +164,21 @@ app.post('/api/register', async (req, res) => {
           SET referral_id = $1 
           WHERE id = $2
         `, [referralIdStr, seqId]);
+
+        // Populate associate_hierarchy for MLM tracking
+        if (role === 'associate') {
+          // Verify referrer is an associate to serve as parent
+          const parentResult = await pool.query(
+            'SELECT role FROM login_details WHERE user_id = $1',
+            [referrerId]
+          );
+          if (parentResult.rows.length > 0 && parentResult.rows[0].role === 'associate') {
+            await pool.query(
+              'INSERT INTO associate_hierarchy (associate_id, parent_associate_id) VALUES ($1, $2)',
+              [newUser.user_id, referrerId]
+            );
+          }
+        }
       }
     }
 
@@ -228,6 +242,23 @@ app.post('/api/login', async (req, res) => {
 app.get('/api/referrals/:userId', async (req, res) => {
   const { userId } = req.params;
   try {
+    // Resolve userId to a real numeric user_id from login_details
+    let numericUserId = parseInt(userId);
+
+    if (isNaN(numericUserId) || numericUserId > 2147483647) {
+      // userId is a custom_user_id, associate_id, or similar string -- look it up
+      const lookup = await pool.query(
+        'SELECT user_id FROM login_details WHERE custom_user_id = $1 OR associate_id = $1 LIMIT 1',
+        [userId.toString()]
+      );
+      if (lookup.rows.length > 0) {
+        numericUserId = lookup.rows[0].user_id;
+      } else {
+        // Nothing found — return empty, not an error
+        return res.json([]);
+      }
+    }
+
     const query = `
       SELECT r.referral_id, r.referral_type, r.promo_code, r.status, r.created_at,
              l.first_name, l.last_name, l.email, l.custom_user_id, l.associate_id
@@ -236,8 +267,7 @@ app.get('/api/referrals/:userId', async (req, res) => {
       WHERE r.referrer_id = $1
       ORDER BY r.created_at DESC
     `;
-    const formattedUserId = `refr${userId}`;
-    const result = await pool.query(query, [formattedUserId]);
+    const result = await pool.query(query, [numericUserId]);
     res.json(result.rows);
   } catch (err) {
     console.error('Error fetching referrals:', err);
@@ -336,19 +366,33 @@ app.patch('/api/users/:userId/avatar', async (req, res) => {
   }
 });
 
-// Get user bookings
+// Get user bookings (with passenger count)
 app.get('/api/bookings/:userId', async (req, res) => {
   const { userId } = req.params;
   try {
+    // Resolve userId to numeric
+    let numericId = parseInt(userId);
+    if (isNaN(numericId) || numericId > 2147483647) {
+      const lookup = await pool.query(
+        'SELECT user_id FROM login_details WHERE custom_user_id = $1 OR associate_id = $1 LIMIT 1',
+        [userId.toString()]
+      );
+      numericId = lookup.rows.length > 0 ? lookup.rows[0].user_id : null;
+    }
+    if (!numericId) return res.json([]);
+
     const query = `
       SELECT b.booking_id, b.travel_date, b.total_amount, b.status, b.created_at,
-             p.name as package_name, p.destination
+             p.name as package_name, p.destination,
+             COUNT(ps.passenger_id)::int as passenger_count
       FROM bookings b
       LEFT JOIN packages p ON b.package_id = p.package_id
+      LEFT JOIN passengers ps ON b.booking_id = ps.booking_id
       WHERE b.user_id = $1
+      GROUP BY b.booking_id, p.name, p.destination
       ORDER BY b.created_at DESC
     `;
-    const result = await pool.query(query, [userId]);
+    const result = await pool.query(query, [numericId]);
     res.json(result.rows);
   } catch (err) {
     console.error('Error fetching bookings:', err);
@@ -356,9 +400,24 @@ app.get('/api/bookings/:userId', async (req, res) => {
   }
 });
 
+// Get passengers for a specific booking
+app.get('/api/bookings/:bookingId/passengers', async (req, res) => {
+  const { bookingId } = req.params;
+  try {
+    const result = await pool.query(
+      'SELECT * FROM passengers WHERE booking_id = $1 ORDER BY passenger_id ASC',
+      [parseInt(bookingId)]
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Error fetching passengers:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Create a new booking
 app.post('/api/bookings', async (req, res) => {
-  const { userId, userEmail, packageId, travelDate, totalAmount, promoCode, associateId: providedAssociateId } = req.body;
+  const { userId, userEmail, packageId, travelDate, totalAmount, promoCode, associateId: providedAssociateId, passengers } = req.body;
 
   if (!userId || !packageId || !totalAmount) {
     return res.status(400).json({ error: 'Missing required booking information' });
@@ -406,6 +465,18 @@ app.post('/api/bookings', async (req, res) => {
       }
     }
 
+    // Check associateId 
+    let finalAssociateId = null;
+    let numericProvidedAssociateId = parseInt(providedAssociateId);
+    if (!isNaN(numericProvidedAssociateId) && numericProvidedAssociateId <= 2147483647) {
+      finalAssociateId = numericProvidedAssociateId;
+    } else if (providedAssociateId) {
+      const ascLookup = await pool.query('SELECT user_id FROM login_details WHERE associate_id = $1 LIMIT 1', [providedAssociateId.toString()]);
+      if (ascLookup.rows.length > 0) {
+        finalAssociateId = ascLookup.rows[0].user_id;
+      }
+    }
+
     // 1. Resolve package_id if it's a custom_id
     let numericPackageId = parseInt(packageId);
     if (isNaN(numericPackageId)) {
@@ -442,31 +513,39 @@ app.post('/api/bookings', async (req, res) => {
       }
     }
 
-    // 2. Determine associate_id
-    let finalAssociateId = providedAssociateId || null;
+    // 2. Determine associate_id for the booking
+    // Priority: (a) explicitly provided associateId, (b) promo code, (c) referrals table
 
-    // If promo code provided, look up associate
+    // (a) Already resolved above from providedAssociateId
+
+    // (b) If promo code provided, look up associate from promo_codes
     if (promoCode && !finalAssociateId) {
-      const promoResult = await pool.query("SELECT associate_id FROM promo_codes WHERE code = $1 AND status = 'active'", [promoCode]);
+      const promoResult = await pool.query(
+        "SELECT associate_id FROM promo_codes WHERE code = $1 AND status = 'active' LIMIT 1",
+        [promoCode]
+      );
       if (promoResult.rows.length > 0) {
         finalAssociateId = promoResult.rows[0].associate_id;
       }
     }
 
-    // If still no associate and user is in the DB, check if user was referred
+    // (c) If still no associate and user is in DB, look up who referred this user in the referrals table.
+    //     referrer_id is now a real integer (login_details.user_id) — no string parsing needed.
     if (!finalAssociateId && numericUserId) {
       try {
-        const refResult = await pool.query(`
-          SELECT referrer_id 
-          FROM referrals 
-          WHERE referred_user_id = $1 AND status = 'active'
-          LIMIT 1
-        `, [numericUserId]);
-
-        if (refResult.rows.length > 0) {
-          const refIdStr = refResult.rows[0].referrer_id;
-          if (refIdStr && refIdStr.startsWith('refr')) {
-            finalAssociateId = parseInt(refIdStr.replace('refr', ''));
+        const refResult = await pool.query(
+          `SELECT referrer_id FROM referrals WHERE referred_user_id = $1 AND status = 'active' LIMIT 1`,
+          [numericUserId]
+        );
+        if (refResult.rows.length > 0 && refResult.rows[0].referrer_id) {
+          const candidateId = refResult.rows[0].referrer_id;
+          // Verify they are an associate (not a plain user) before linking
+          const roleCheck = await pool.query(
+            `SELECT user_id FROM login_details WHERE user_id = $1 AND role = 'associate' LIMIT 1`,
+            [candidateId]
+          );
+          if (roleCheck.rows.length > 0) {
+            finalAssociateId = candidateId;
           }
         }
       } catch (refErr) {
@@ -495,6 +574,73 @@ app.post('/api/bookings', async (req, res) => {
     ]);
     const newBooking = bookingResult.rows[0];
 
+    // Insert passengers if provided
+    if (passengers && Array.isArray(passengers) && passengers.length > 0) {
+      for (const p of passengers) {
+        await pool.query(
+          `INSERT INTO passengers (booking_id, name, age, gender, id_proof) VALUES ($1, $2, $3, $4, $5)`,
+          [newBooking.booking_id, p.name || 'Unknown', p.age || 0, p.gender || 'Not Specified', p.id_proof || null]
+        );
+      }
+    }
+
+    // Automatic multi-level commission generation
+    // bookings.associate_id = the referring associate (Level 1 earner)
+    // Their parent = Level 2, grandparent = Level 3, and so on.
+    // Only users with role='associate' receive commissions.
+    if (newBooking.associate_id) {
+      try {
+        const commLevelRes = await pool.query('SELECT level, percentage FROM commission_levels ORDER BY level ASC');
+        const commLevels = commLevelRes.rows;
+        const maxLevel = commLevels.length > 0 ? Math.max(...commLevels.map(c => c.level)) : 7;
+
+        // Start at the booking's associate (the referrer) — they get Level 1
+        let currentAssociateId = newBooking.associate_id;
+        let currentLevel = 1;
+
+        while (currentAssociateId && currentLevel <= maxLevel) {
+          // Verify this associate has role='associate' — never grant commission to plain users
+          const roleCheck = await pool.query(
+            `SELECT user_id FROM login_details WHERE user_id = $1 AND role = 'associate' LIMIT 1`,
+            [currentAssociateId]
+          );
+
+          if (roleCheck.rows.length > 0) {
+            const levelData = commLevels.find(c => c.level === currentLevel);
+            const percentage = levelData ? parseFloat(levelData.percentage) : 0;
+
+            if (percentage > 0) {
+              const commissionAmount = parseFloat(newBooking.total_amount) * (percentage / 100);
+              await pool.query(
+                `INSERT INTO commissions (booking_id, associate_id, level, commission_amount, status, created_at)
+                 VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)`,
+                [newBooking.booking_id, currentAssociateId, currentLevel, commissionAmount, 'pending']
+              );
+              console.log(`Commission Level ${currentLevel}: associate_id=${currentAssociateId}, amount=${commissionAmount}`);
+            }
+          } else {
+            console.warn(`Skipping commission for user_id=${currentAssociateId} — not an associate.`);
+          }
+
+          // Traverse up to next parent in hierarchy
+          const nextParentRes = await pool.query(
+            'SELECT parent_associate_id FROM associate_hierarchy WHERE associate_id = $1 LIMIT 1',
+            [currentAssociateId]
+          );
+
+          if (nextParentRes.rows.length > 0 && nextParentRes.rows[0].parent_associate_id) {
+            currentAssociateId = nextParentRes.rows[0].parent_associate_id;
+            currentLevel++;
+          } else {
+            break; // No more parents — commission distribution stops
+          }
+        }
+      } catch (commErr) {
+        console.error('Failed to generate commission:', commErr);
+        throw commErr; // Propagate to rollback the entire transaction
+      }
+    }
+
     await pool.query('COMMIT');
     res.status(201).json({
       message: 'Booking created successfully',
@@ -504,6 +650,66 @@ app.post('/api/bookings', async (req, res) => {
     await pool.query('ROLLBACK');
     console.error('Booking creation error:', err);
     res.status(500).json({ error: 'Internal server error while creating booking: ' + err.message });
+  }
+});
+
+// Admin: Create Packages
+app.post('/api/admin/packages', async (req, res) => {
+  const { name, destination, duration, price, description, status, custom_id, itinerary } = req.body;
+  try {
+    await pool.query('BEGIN');
+    const result = await pool.query(
+      `INSERT INTO packages (name, destination, duration, price, description, status) 
+       VALUES ($1, $2, $3, $4, $5, $6) RETURNING package_id`,
+      [name, destination, duration, price, description, status || 'active']
+    );
+    const newPackageId = result.rows[0].package_id;
+
+    if (itinerary && Array.isArray(itinerary)) {
+      for (const day of itinerary) {
+        await pool.query(
+          `INSERT INTO package_itinerary (package_id, day_number, title, activities) VALUES ($1, $2, $3, $4)`,
+          [newPackageId, day.day_number, day.title, JSON.stringify(day.activities || [])]
+        );
+      }
+    }
+
+    await pool.query('COMMIT');
+    res.status(201).json({ message: 'Package created successfully', package_id: newPackageId });
+  } catch (err) {
+    await pool.query('ROLLBACK');
+    console.error('Error creating package:', err);
+    res.status(500).json({ error: 'Internal server error: ' + err.message });
+  }
+});
+
+// Admin: Make Payout to Associate
+app.post('/api/admin/payouts', async (req, res) => {
+  const { associate_id, amount, payment_mode, transaction_reference } = req.body;
+  try {
+    const result = await pool.query(
+      `INSERT INTO payouts (associate_id, amount, payment_mode, transaction_reference, status) 
+       VALUES ($1, $2, $3, $4, 'completed') RETURNING *`,
+      [associate_id, amount, payment_mode, transaction_reference]
+    );
+    res.status(201).json({ message: 'Payout recorded', payout: result.rows[0] });
+  } catch (err) {
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Admin: Issue Refund
+app.post('/api/admin/refunds', async (req, res) => {
+  const { booking_id, payment_id, amount, reason } = req.body;
+  try {
+    const result = await pool.query(
+      `INSERT INTO refunds (booking_id, payment_id, amount, reason, status) 
+       VALUES ($1, $2, $3, $4, 'completed') RETURNING *`,
+      [booking_id, payment_id, amount, reason]
+    );
+    res.status(201).json({ message: 'Refund recorded', refund: result.rows[0] });
+  } catch (err) {
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -587,6 +793,14 @@ const bootstrap = async () => {
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
           );
 
+          CREATE TABLE IF NOT EXISTS package_itinerary (
+            itinerary_id SERIAL PRIMARY KEY,
+            package_id INT REFERENCES packages(package_id),
+            day_number INT,
+            title VARCHAR(200),
+            activities JSONB DEFAULT '[]'
+          );
+
           CREATE TABLE IF NOT EXISTS bookings (
             booking_id SERIAL PRIMARY KEY,
             user_id INT REFERENCES login_details(user_id),
@@ -601,10 +815,19 @@ const bootstrap = async () => {
 
           ALTER TABLE bookings ADD COLUMN IF NOT EXISTS user_email TEXT;
 
+          CREATE TABLE IF NOT EXISTS passengers (
+            passenger_id SERIAL PRIMARY KEY,
+            booking_id INT REFERENCES bookings(booking_id),
+            name VARCHAR(150),
+            age INT,
+            gender VARCHAR(10),
+            id_proof VARCHAR(100)
+          );
+
           CREATE TABLE IF NOT EXISTS referrals (
             id SERIAL UNIQUE,
             referral_id VARCHAR(50) PRIMARY KEY,
-            referrer_id VARCHAR(50),
+            referrer_id INT REFERENCES login_details(user_id),
             referred_user_id INT REFERENCES login_details(user_id),
             referral_type VARCHAR(20) CHECK (referral_type IN ('user','associate')),
             promo_code VARCHAR(50),

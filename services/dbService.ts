@@ -100,8 +100,8 @@ export const dbService = {
     return await executeSql(
       "INSERT INTO packages (name, destination, duration, price, description, category, image, status, itinerary, location, track) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)",
       [
-        pkg.name, pkg.destination, pkg.duration, pkg.price, pkg.description, 
-        pkg.category, pkg.image, pkg.status || 'active', 
+        pkg.name, pkg.destination, pkg.duration, pkg.price, pkg.description,
+        pkg.category, pkg.image, pkg.status || 'active',
         JSON.stringify(pkg.itinerary || []),
         pkg.location || '',
         pkg.track || ''
@@ -113,8 +113,8 @@ export const dbService = {
     return await executeSql(
       "UPDATE packages SET name=$1, destination=$2, duration=$3, price=$4, description=$5, category=$6, image=$7, status=$8, itinerary=$9, location=$10, track=$11 WHERE package_id=$12",
       [
-        pkg.name, pkg.destination, pkg.duration, pkg.price, pkg.description, 
-        pkg.category, pkg.image, pkg.status, 
+        pkg.name, pkg.destination, pkg.duration, pkg.price, pkg.description,
+        pkg.category, pkg.image, pkg.status,
         JSON.stringify(pkg.itinerary || []),
         pkg.location || '',
         pkg.track || '',
@@ -209,7 +209,16 @@ export const dbService = {
     return null;
   },
 
-  async createBooking(data: { userId: string | number; userEmail?: string; packageId: string | number; travelDate: string; totalAmount: string | number; promoCode?: string }) {
+  async createBooking(data: {
+    userId: string | number;
+    userEmail?: string;
+    packageId: string | number;
+    travelDate: string;
+    totalAmount: string | number;
+    promoCode?: string;
+    associateId?: string | number;
+    passengers?: Array<{ name: string; age: number; gender: string; id_proof?: string | null }>;
+  }) {
     const response = await fetch(`${BASE_URL}/api/bookings`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -329,7 +338,7 @@ export const dbService = {
         ORDER BY package_id DESC
       `;
       const rows = await executeSql(query);
-      
+
       return rows.map((row: any) => ({
         ...row,
         id: row.custom_id || row.db_id.toString(),

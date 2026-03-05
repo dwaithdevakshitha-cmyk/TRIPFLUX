@@ -69,6 +69,14 @@ CREATE TABLE packages (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE package_itinerary (
+    itinerary_id SERIAL PRIMARY KEY,
+    package_id INT REFERENCES packages(package_id),
+    day_number INT,
+    title VARCHAR(200),
+    activities JSONB DEFAULT '[]'
+);
+
 -- =========================================
 -- 6) BOOKINGS (Main Orders)
 -- =========================================
@@ -169,7 +177,7 @@ CREATE TABLE referrals (
     id SERIAL UNIQUE,
     referral_id VARCHAR(50) PRIMARY KEY,
 
-    referrer_id VARCHAR(50),
+    referrer_id INT REFERENCES login_details(user_id),
     referred_user_id INT REFERENCES login_details(user_id),
 
     referral_type VARCHAR(20) CHECK (referral_type IN ('user','associate')),

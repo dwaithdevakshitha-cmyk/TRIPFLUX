@@ -23,6 +23,7 @@ const SignupPage: React.FC<SignupPageProps> = ({ onBack, onAuthSuccess }) => {
     const [phone, setPhone] = useState('');
     const [dob, setDob] = useState('');
     const [panNumber, setPanNumber] = useState('');
+    const [panError, setPanError] = useState('');
     const [selectedRole, setSelectedRole] = useState<'admin' | 'associate'>('associate');
     const [referralCode, setReferralCode] = useState(() => {
         return new URLSearchParams(window.location.search).get('ref') || '';
@@ -43,7 +44,7 @@ const SignupPage: React.FC<SignupPageProps> = ({ onBack, onAuthSuccess }) => {
         if (isRegistering) {
             const phoneRegex = /^\d{10}$/;
             const phoneToCheck = loginType === 'ASSOCIATE' ? phone : userPhone;
-            
+
             if (loginType === 'ASSOCIATE' || !isEmail) {
                 if (!phoneRegex.test(phoneToCheck)) {
                     setError('Phone number must be exactly 10 digits.');
@@ -146,6 +147,7 @@ const SignupPage: React.FC<SignupPageProps> = ({ onBack, onAuthSuccess }) => {
                         lastName: lastName || '',
                         role,
                         promoCode: generatedPromoCode,
+                        referralCode: referralCode || '',
                         timestamp: new Date().toISOString()
                     };
                     storageService.saveCustomer(userData);
@@ -165,7 +167,7 @@ const SignupPage: React.FC<SignupPageProps> = ({ onBack, onAuthSuccess }) => {
                     if (user) {
                         authUser = {
                             id: user.id || Date.now().toString(),
-                            name: user.firstName || user.name || userEmail.split('@')[0].toUpperCase(),
+                            name: (user.firstName && user.lastName) ? `${user.firstName} ${user.lastName}` : (user.firstName || user.name || userEmail.split('@')[0].toUpperCase()),
                             email: user.emailOrPhone,
                             avatar: user.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=100&auto=format&fit=crop',
                             role: user.role,
@@ -300,12 +302,42 @@ const SignupPage: React.FC<SignupPageProps> = ({ onBack, onAuthSuccess }) => {
                                     <input
                                         type="text"
                                         value={panNumber}
-                                        onChange={(e) => setPanNumber(e.target.value.toUpperCase())}
+                                        onChange={(e) => {
+                                            // Enforce: first 5 alpha, next 4 numeric, last 1 alpha
+                                            const raw = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+                                            let built = '';
+                                            for (let i = 0; i < raw.length && i < 10; i++) {
+                                                const ch = raw[i];
+                                                if (i < 5) built += /[A-Z]/.test(ch) ? ch : '';
+                                                else if (i < 9) built += /[0-9]/.test(ch) ? ch : '';
+                                                else built += /[A-Z]/.test(ch) ? ch : '';
+                                            }
+                                            setPanNumber(built);
+                                            if (built.length === 10) {
+                                                const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
+                                                setPanError(panRegex.test(built) ? '' : 'Invalid PAN format (e.g. ABCDE1234F)');
+                                            } else {
+                                                setPanError('');
+                                            }
+                                        }}
                                         placeholder="ABCDE1234F"
                                         maxLength={10}
-                                        className="w-full px-6 py-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder:text-white/20 focus:outline-none focus:border-indigo-500 transition-all font-medium"
+                                        className={`w-full px-6 py-4 bg-white/5 border rounded-2xl text-white placeholder:text-white/20 focus:outline-none transition-all font-mono font-bold tracking-widest ${
+                                            panError ? 'border-red-500 focus:border-red-500' :
+                                            panNumber.length === 10 ? 'border-emerald-500 focus:border-emerald-500' :
+                                            'border-white/10 focus:border-indigo-500'
+                                        }`}
                                         required
                                     />
+                                    {panError && <p className="text-red-400 text-[10px] font-bold mt-1 ml-1">{panError}</p>}
+                                    {!panError && panNumber.length === 10 && <p className="text-emerald-400 text-[10px] font-bold mt-1 ml-1">✓ Valid PAN format</p>}
+                                    {!panError && panNumber.length > 0 && panNumber.length < 10 && (
+                                        <p className="text-white/30 text-[10px] mt-1 ml-1">
+                                            {panNumber.length < 5 ? `${5 - panNumber.length} more alphabets` :
+                                             panNumber.length < 9 ? `${9 - panNumber.length} more digits` :
+                                             '1 more alphabet'}
+                                        </p>
+                                    )}
                                 </div>
                                 <div className="space-y-2">
                                     <label className="text-[11px] font-black text-white/40 uppercase tracking-[0.2em] ml-1">Role</label>

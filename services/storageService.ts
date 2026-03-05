@@ -72,5 +72,40 @@ export const storageService = {
         } catch (error) {
             return [];
         }
+    },
+
+    updateCustomer(emailOrPhone: string, updates: any) {
+        try {
+            const customers = this.getCustomers();
+            const index = customers.findIndex((c: any) => c.emailOrPhone === emailOrPhone);
+            if (index !== -1) {
+                customers[index] = { ...customers[index], ...updates };
+                const encryptedData = CryptoJS.AES.encrypt(JSON.stringify(customers), SECRET_KEY).toString();
+                localStorage.setItem('tripflux_user_details_xml', encryptedData);
+                localStorage.setItem('tripflux_user_details_backup_xml', encryptedData);
+                return customers[index];
+            }
+        } catch (error) {
+            console.error('Storage Update Error:', error);
+        }
+        return null;
+    },
+
+    getReferralsByPromo(promoCodeOrId: string) {
+        if (!promoCodeOrId) return [];
+        try {
+            const customers = this.getCustomers();
+            return customers
+                .filter((c: any) => c.referralCode === promoCodeOrId)
+                .map((c: any) => ({
+                    first_name: c.firstName,
+                    last_name: c.lastName,
+                    custom_user_id: c.id,
+                    referral_type: c.role,
+                    status: 'pending'
+                }));
+        } catch (error) {
+            return [];
+        }
     }
 };

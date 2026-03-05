@@ -32,6 +32,63 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, tourTitle,
     const [expiryDate, setExpiryDate] = useState('');
     const [cvv, setCvv] = useState('');
 
+    // Passenger State
+    const [passengers, setPassengers] = useState([
+        { name: '', age: '', gender: 'Male', id_type: 'aadhaar', id_proof: '', id_error: '' }
+    ]);
+
+    const addPassenger = () => {
+        setPassengers(prev => [...prev, { name: '', age: '', gender: 'Male', id_type: 'aadhaar', id_proof: '', id_error: '' }]);
+    };
+
+    const removePassenger = (index: number) => {
+        setPassengers(prev => prev.filter((_, i) => i !== index));
+    };
+
+    const updatePassenger = (index: number, field: string, value: string) => {
+        setPassengers(prev => prev.map((p, i) => i === index ? { ...p, [field]: value } : p));
+    };
+
+    // --- Format enforcement: Aadhaar (12 digits, formatted XXXX XXXX XXXX) ---
+    const handleAadhaarInput = (index: number, raw: string) => {
+        const digits = raw.replace(/\D/g, '').slice(0, 12);
+        const formatted = digits.replace(/(\d{4})(?=\d)/g, '$1 ').trim();
+        let error = '';
+        if (digits.length === 12) error = '';
+        else if (digits.length > 0) error = '';
+        setPassengers(prev => prev.map((p, i) => i === index
+            ? { ...p, id_proof: formatted, id_error: error }
+            : p
+        ));
+    };
+
+    // --- Format enforcement: PAN (ABCDE1234F) ---
+    const handlePanInput = (index: number, raw: string) => {
+        const cleaned = raw.toUpperCase().replace(/[^A-Z0-9]/g, '');
+        let built = '';
+        for (let i = 0; i < cleaned.length && i < 10; i++) {
+            const ch = cleaned[i];
+            if (i < 5) built += /[A-Z]/.test(ch) ? ch : '';
+            else if (i < 9) built += /[0-9]/.test(ch) ? ch : '';
+            else built += /[A-Z]/.test(ch) ? ch : '';
+        }
+        let error = '';
+        if (built.length === 10 && !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(built)) {
+            error = 'Invalid PAN format';
+        }
+        setPassengers(prev => prev.map((p, i) => i === index
+            ? { ...p, id_proof: built, id_error: error }
+            : p
+        ));
+    };
+
+    const switchIdType = (index: number, newType: string) => {
+        setPassengers(prev => prev.map((p, i) => i === index
+            ? { ...p, id_type: newType, id_proof: '', id_error: '' }
+            : p
+        ));
+    };
+
     // Bank Account Details
     const bankDetails = {
         accountName: 'MDR RETAIL INDIA PRIVATE LIMITED',
@@ -59,6 +116,13 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, tourTitle,
             return;
         }
 
+        // Validate passengers — at least one with a name
+        const validPassengers = passengers.filter(p => p.name.trim());
+        if (validPassengers.length === 0) {
+            alert('Please enter at least one passenger name.');
+            return;
+        }
+
         setIsProcessing(true);
 
         try {
@@ -83,7 +147,14 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, tourTitle,
                 packageId: tourId,
                 travelDate: travelDate,
                 totalAmount: amount,
-                promoCode: promoCode
+                promoCode: promoCode,
+                associateId: user.role === 'associate' ? resolvedUserId : undefined,
+                passengers: validPassengers.map(p => ({
+                    name: p.name.trim(),
+                    age: parseInt(p.age) || 0,
+                    gender: p.gender,
+                    id_proof: p.id_proof.trim() || null
+                }))
             });
 
             // Simulate payment processing
@@ -172,8 +243,11 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, tourTitle,
                     </div>
                 </div>
 
+                {/* Scrollable Middle: Booking Options + Passengers + Payment */}
+                <div className="flex-1 overflow-y-auto flex flex-col">
+
                 {/* Booking Options */}
-                <div className="bg-slate-50 p-6 border-b border-slate-200">
+                <div className="bg-slate-50 p-6 border-b border-slate-200 flex-shrink-0">
                     <div className="grid grid-cols-2 gap-6">
                         <div>
                             <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Travel Date</label>
@@ -199,8 +273,153 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, tourTitle,
                     </div>
                 </div>
 
+                {/* Passenger Details Section */}
+                <div className="bg-white px-8 py-6 border-b border-slate-200">
+                    <div className="flex items-center justify-between mb-4">
+                        <h4 className="text-xs font-black text-slate-700 uppercase tracking-widest">Traveler Details</h4>
+                        <button
+                            type="button"
+                            onClick={addPassenger}
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded-lg text-xs font-black uppercase tracking-wider transition-all"
+                        >
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" /></svg>
+                            Add Passenger
+                        </button>
+                    </div>
+                    <div className="space-y-4 max-h-64 overflow-y-auto pr-1">
+                        {passengers.map((passenger, index) => (
+                            <div key={index} className="bg-slate-50 rounded-2xl p-4 border border-slate-200 relative">
+                                <div className="flex items-center justify-between mb-3">
+                                    <span className="text-[10px] font-black text-indigo-500 uppercase tracking-widest">Traveler {index + 1}</span>
+                                    {passengers.length > 1 && (
+                                        <button
+                                            type="button"
+                                            onClick={() => removePassenger(index)}
+                                            className="text-red-400 hover:text-red-600 transition-colors"
+                                        >
+                                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>
+                                        </button>
+                                    )}
+                                </div>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="col-span-2">
+                                        <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Full Name *</label>
+                                        <input
+                                            type="text"
+                                            value={passenger.name}
+                                            onChange={e => updatePassenger(index, 'name', e.target.value)}
+                                            placeholder="Enter full name"
+                                            className="w-full px-3 py-2 bg-white border-2 border-slate-200 rounded-xl focus:border-indigo-500 focus:outline-none text-sm font-medium"
+                                            required
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Age *</label>
+                                        <input
+                                            type="number"
+                                            value={passenger.age}
+                                            onChange={e => updatePassenger(index, 'age', e.target.value)}
+                                            placeholder="Age"
+                                            min="1" max="120"
+                                            className="w-full px-3 py-2 bg-white border-2 border-slate-200 rounded-xl focus:border-indigo-500 focus:outline-none text-sm font-medium"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Gender *</label>
+                                        <select
+                                            value={passenger.gender}
+                                            onChange={e => updatePassenger(index, 'gender', e.target.value)}
+                                            className="w-full px-3 py-2 bg-white border-2 border-slate-200 rounded-xl focus:border-indigo-500 focus:outline-none text-sm font-medium"
+                                        >
+                                            <option>Male</option>
+                                            <option>Female</option>
+                                            <option>Other</option>
+                                        </select>
+                                    </div>
+                                    <div className="col-span-2">
+                                        <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">ID Proof (Optional)</label>
+                                        {/* Type toggle */}
+                                        <div className="flex gap-2 mb-2">
+                                            {(['aadhaar', 'pan'] as const).map(t => (
+                                                <button
+                                                    key={t}
+                                                    type="button"
+                                                    onClick={() => switchIdType(index, t)}
+                                                    className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all ${
+                                                        passenger.id_type === t
+                                                            ? 'bg-indigo-600 text-white'
+                                                            : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                                                    }`}
+                                                >
+                                                    {t === 'aadhaar' ? 'Aadhaar' : 'PAN Card'}
+                                                </button>
+                                            ))}
+                                        </div>
+
+                                        {/* Aadhaar Input */}
+                                        {passenger.id_type === 'aadhaar' && (
+                                            <>
+                                                <input
+                                                    type="text"
+                                                    value={passenger.id_proof}
+                                                    onChange={e => handleAadhaarInput(index, e.target.value)}
+                                                    placeholder="1234 5678 9012"
+                                                    maxLength={14}
+                                                    className={`w-full px-3 py-2 border-2 rounded-xl focus:outline-none text-sm font-mono font-bold tracking-widest ${
+                                                        passenger.id_proof.replace(/\s/g, '').length === 12
+                                                            ? 'border-emerald-500 focus:border-emerald-500 bg-emerald-50'
+                                                            : 'border-slate-200 focus:border-indigo-500 bg-white'
+                                                    }`}
+                                                />
+                                                <div className="flex justify-between mt-1">
+                                                    <span className="text-[10px] text-slate-400">12 digits · no alphabets · XXXX XXXX XXXX</span>
+                                                    {passenger.id_proof.replace(/\s/g, '').length === 12 &&
+                                                        <span className="text-[10px] text-emerald-600 font-bold">✓ Valid</span>
+                                                    }
+                                                    {passenger.id_proof.length > 0 && passenger.id_proof.replace(/\s/g, '').length < 12 &&
+                                                        <span className="text-[10px] text-slate-400">{12 - passenger.id_proof.replace(/\s/g, '').length} more</span>
+                                                    }
+                                                </div>
+                                            </>
+                                        )}
+
+                                        {/* PAN Input */}
+                                        {passenger.id_type === 'pan' && (
+                                            <>
+                                                <input
+                                                    type="text"
+                                                    value={passenger.id_proof}
+                                                    onChange={e => handlePanInput(index, e.target.value)}
+                                                    placeholder="ABCDE1234F"
+                                                    maxLength={10}
+                                                    className={`w-full px-3 py-2 border-2 rounded-xl focus:outline-none text-sm font-mono font-bold tracking-[0.2em] uppercase ${
+                                                        passenger.id_error ? 'border-red-400 focus:border-red-500 bg-red-50' :
+                                                        passenger.id_proof.length === 10 ? 'border-emerald-500 focus:border-emerald-500 bg-emerald-50' :
+                                                        'border-slate-200 focus:border-indigo-500 bg-white'
+                                                    }`}
+                                                />
+                                                <div className="flex justify-between mt-1">
+                                                    <span className="text-[10px] text-slate-400">5 letters · 4 digits · 1 letter</span>
+                                                    {passenger.id_error && <span className="text-[10px] text-red-500 font-bold">{passenger.id_error}</span>}
+                                                    {!passenger.id_error && passenger.id_proof.length === 10 && <span className="text-[10px] text-emerald-600 font-bold">✓ Valid</span>}
+                                                    {!passenger.id_error && passenger.id_proof.length > 0 && passenger.id_proof.length < 10 &&
+                                                        <span className="text-[10px] text-slate-400">
+                                                            {passenger.id_proof.length < 5 ? `${5 - passenger.id_proof.length} letters` :
+                                                             passenger.id_proof.length < 9 ? `${9 - passenger.id_proof.length} digits` : '1 letter'}
+                                                        </span>
+                                                    }
+                                                </div>
+                                            </>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
                 {/* Payment Method Tabs */}
-                <div className="flex border-b border-slate-200 bg-slate-50">
+                <div className="flex border-b border-slate-200 bg-slate-50 flex-shrink-0">
                     <button
                         onClick={() => setPaymentMethod('UPI')}
                         className={`flex-1 py-4 px-6 font-bold text-sm uppercase tracking-wider transition-all ${paymentMethod === 'UPI'
@@ -231,7 +450,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, tourTitle,
                 </div>
 
                 {/* Payment Content */}
-                <div className="flex-1 overflow-y-auto p-8">
+                <div className="p-8">
                     {/* UPI Payment */}
                     {paymentMethod === 'UPI' && (
                         <div className="space-y-6">
@@ -447,9 +666,10 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, tourTitle,
                         </div>
                     )}
                 </div>
+                </div> {/* End scrollable middle */}
 
-                {/* Footer */}
-                <div className="bg-slate-50 p-6 border-t border-slate-200">
+                {/* Footer — always visible, pinned at bottom */}
+                <div className="bg-slate-50 p-6 border-t border-slate-200 flex-shrink-0">
                     <div className="flex gap-4">
                         <button
                             onClick={onClose}
