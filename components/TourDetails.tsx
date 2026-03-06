@@ -412,7 +412,7 @@ const TourDetails: React.FC<TourDetailsProps> = ({ tour, user, onBack }) => {
                                 <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Actual Visits Timeline</h4>
                                 <div className="h-px flex-1 bg-slate-100"></div>
                             </div>
-                            
+
                             {getVisitedPlaces().length === 0 ? (
                                 <div className="text-center py-16">
                                     <div className="w-24 h-24 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -521,6 +521,7 @@ const TourDetails: React.FC<TourDetailsProps> = ({ tour, user, onBack }) => {
                 amount={tour.price}
                 tourId={tour.id}
                 user={user}
+                availableDates={tour.dates}
             />
         </div>
     );

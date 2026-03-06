@@ -1836,7 +1836,7 @@ const App: React.FC = () => {
         // Only auto-login to admin if hash is #admin, otherwise stay in IDLE (Home)
         if (parsed.role === 'admin' && window.location.hash === '#admin') return AppStatus.ADMIN;
       }
-    } catch(e) {}
+    } catch (e) { }
     return AppStatus.IDLE;
   });
   const [user, setUser] = useState<User | null>(() => {
@@ -1851,7 +1851,7 @@ const App: React.FC = () => {
     // Check if we have a referral link
     const params = new URLSearchParams(window.location.search);
     if (window.location.href.includes('ref=')) return 'SIGNUP';
-    
+
     try {
       const saved = localStorage.getItem('tripflux_user');
       return saved ? 'HOME' : 'SIGNUP';
@@ -1876,7 +1876,7 @@ const App: React.FC = () => {
       const numericId = parseInt(user.id);
       const isStaleId = isNaN(numericId) || numericId > 2147483647;
       const needsPromoCode = user.role === 'associate' && (!user.promoCode || user.promoCode === 'PENDING');
-      
+
       if ((isStaleId || needsPromoCode) && user.email) {
         try {
           const response = await fetch(`http://127.0.0.1:3001/api/users/by-email/${encodeURIComponent(user.email)}`);
@@ -1884,10 +1884,10 @@ const App: React.FC = () => {
             const dbUser = await response.json();
             if (dbUser.user_id) {
               // Update user ID and promo code from DB
-              const fixedUser = { 
-                ...user, 
+              const fixedUser = {
+                ...user,
                 id: dbUser.user_id.toString(),
-                promoCode: dbUser.promo_code || user.promoCode 
+                promoCode: dbUser.promo_code || user.promoCode
               };
               setUser(fixedUser);
               console.log('[Session Fix] Updated user from DB:', dbUser.user_id);
@@ -1899,8 +1899,8 @@ const App: React.FC = () => {
       }
     };
     validateAndFixSession();
-  // Only run once on mount (when user first loads from localStorage)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // Only run once on mount (when user first loads from localStorage)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Enforce Sign Up before accessing any content
@@ -1978,8 +1978,8 @@ const App: React.FC = () => {
         if (response.ok) {
           const dbUser = await response.json();
           if (dbUser.user_id) {
-            authUser = { 
-              ...authUser, 
+            authUser = {
+              ...authUser,
               id: dbUser.user_id.toString(),
               promoCode: dbUser.promo_code || authUser.promoCode
             };
@@ -2000,7 +2000,7 @@ const App: React.FC = () => {
       try {
         const allAdminTours = await dbService.getPackagesAdmin();
         const activeTours = await dbService.getPackages();
-        
+
         // If the database has ANY packages at all (even if they are all inactive),
         // we should respect the database as the "Source of Truth" and stop using hardcoded fallbacks.
         if (allAdminTours && allAdminTours.length > 0) {

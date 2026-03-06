@@ -14,6 +14,29 @@ const SignupPage: React.FC<SignupPageProps> = ({ onBack, onAuthSuccess }) => {
     });
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
+    const [emailError, setEmailError] = useState('');
+    const [phoneError, setPhoneError] = useState('');
+
+    const validateEmail = (email: string) => {
+        const emailRegex = /^[a-zA-Z0-9_]+(\.[a-zA-Z0-9_]+)*@[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)+$/;
+        if (!email) return 'Email is required';
+        if (email.includes(' ')) return 'Spaces are not allowed in email';
+        if (!email.includes('@')) return 'Email must contain @ symbol';
+        if (!emailRegex.test(email)) {
+            const [username] = email.split('@');
+            if (username.startsWith('.') || username.endsWith('.')) return 'Username cannot start or end with a dot';
+            return 'Invalid email format (username@domain.com)';
+        }
+        return '';
+    };
+
+    const validatePhone = (phone: string) => {
+        if (!phone) return 'Phone number is required';
+        if (!/^\d+$/.test(phone)) return 'Only numbers (0-9) are allowed';
+        if (phone.length !== 10) return 'Phone number must be exactly 10 digits';
+        if (!/^[6-9]/.test(phone)) return 'Number must start with 6, 7, 8, or 9';
+        return '';
+    };
 
     // Form fields
     const [email, setEmail] = useState('');
@@ -36,18 +59,28 @@ const SignupPage: React.FC<SignupPageProps> = ({ onBack, onAuthSuccess }) => {
         const endpoint = isRegistering ? '/api/register' : '/api/login';
         const role = loginType === 'ASSOCIATE' ? selectedRole : loginType.toLowerCase();
 
-        // Basic detection if the input is email or phone
-        const isEmail = email.includes('@');
-        const userEmail = isEmail ? email : `${email}@placeholder.com`; // DB needs unique email, we might need a better strategy here
+        // Detection: If it contains letters or @, treat as email attempt
+        const isEmail = email.includes('@') || /[a-z]/i.test(email);
+
+        if (isEmail && isRegistering) {
+            const emailErr = validateEmail(email);
+            if (emailErr) {
+                setError(emailErr);
+                setIsLoading(false);
+                return;
+            }
+        }
+
+        const userEmail = isEmail ? email : `${email}@placeholder.com`;
         const userPhone = isEmail ? phone : email;
 
         if (isRegistering) {
-            const phoneRegex = /^\d{10}$/;
             const phoneToCheck = loginType === 'ASSOCIATE' ? phone : userPhone;
+            const phoneErr = validatePhone(phoneToCheck);
 
             if (loginType === 'ASSOCIATE' || !isEmail) {
-                if (!phoneRegex.test(phoneToCheck)) {
-                    setError('Phone number must be exactly 10 digits.');
+                if (phoneErr) {
+                    setError(phoneErr);
                     setIsLoading(false);
                     return;
                 }
@@ -79,7 +112,7 @@ const SignupPage: React.FC<SignupPageProps> = ({ onBack, onAuthSuccess }) => {
                 firstName: firstName || (loginType === 'USER' ? 'User' : ''),
                 lastName: lastName || '',
                 email: userEmail,
-                phone: userPhone,
+                phone: userPhone.startsWith('+') ? userPhone : `+91${userPhone}`,
                 password,
                 role,
                 dateOfBirth: loginType === 'ASSOCIATE' ? dob : null,
@@ -274,15 +307,15 @@ const SignupPage: React.FC<SignupPageProps> = ({ onBack, onAuthSuccess }) => {
                                         pattern="\d{10}"
                                         value={phone}
                                         onChange={(e) => {
-                                            let val = e.target.value.replace(/\D/g, '');
-                                            if (val.length > 10) val = val.slice(0, 10);
-                                            e.target.value = val;
+                                            const val = e.target.value.replace(/\D/g, '').slice(0, 10);
                                             setPhone(val);
+                                            setPhoneError(validatePhone(val));
                                         }}
                                         placeholder="e.g. 9876543210"
                                         className="w-full px-6 py-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder:text-white/20 focus:outline-none focus:border-indigo-500 transition-all font-medium"
                                         required
                                     />
+                                    {phoneError && <p className="text-red-400 text-[9px] font-bold mt-1 ml-1 uppercase">{phoneError}</p>}
                                 </div>
                                 <div className="space-y-2">
                                     <label className="text-[11px] font-black text-white/40 uppercase tracking-[0.2em] ml-1">Date of Birth</label>
@@ -322,11 +355,10 @@ const SignupPage: React.FC<SignupPageProps> = ({ onBack, onAuthSuccess }) => {
                                         }}
                                         placeholder="ABCDE1234F"
                                         maxLength={10}
-                                        className={`w-full px-6 py-4 bg-white/5 border rounded-2xl text-white placeholder:text-white/20 focus:outline-none transition-all font-mono font-bold tracking-widest ${
-                                            panError ? 'border-red-500 focus:border-red-500' :
+                                        className={`w-full px-6 py-4 bg-white/5 border rounded-2xl text-white placeholder:text-white/20 focus:outline-none transition-all font-mono font-bold tracking-widest ${panError ? 'border-red-500 focus:border-red-500' :
                                             panNumber.length === 10 ? 'border-emerald-500 focus:border-emerald-500' :
-                                            'border-white/10 focus:border-indigo-500'
-                                        }`}
+                                                'border-white/10 focus:border-indigo-500'
+                                            }`}
                                         required
                                     />
                                     {panError && <p className="text-red-400 text-[10px] font-bold mt-1 ml-1">{panError}</p>}
@@ -334,8 +366,8 @@ const SignupPage: React.FC<SignupPageProps> = ({ onBack, onAuthSuccess }) => {
                                     {!panError && panNumber.length > 0 && panNumber.length < 10 && (
                                         <p className="text-white/30 text-[10px] mt-1 ml-1">
                                             {panNumber.length < 5 ? `${5 - panNumber.length} more alphabets` :
-                                             panNumber.length < 9 ? `${9 - panNumber.length} more digits` :
-                                             '1 more alphabet'}
+                                                panNumber.length < 9 ? `${9 - panNumber.length} more digits` :
+                                                    '1 more alphabet'}
                                         </p>
                                     )}
                                 </div>
@@ -374,11 +406,36 @@ const SignupPage: React.FC<SignupPageProps> = ({ onBack, onAuthSuccess }) => {
                         <input
                             type="text"
                             value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            placeholder={isRegistering ? "e.g. wanderer@flux.com or 9876543210" : "e.g. wanderer@flux.com"}
+                            onChange={(e) => {
+                                let val = e.target.value.toLowerCase();
+                                // If input is numeric-only, cap at 10 digits
+                                if (/^\d+$/.test(val)) {
+                                    val = val.slice(0, 10);
+                                }
+                                setEmail(val);
+                                if (isRegistering) {
+                                    // If it contains letters or @, treat it as email for real-time validation
+                                    if (/[a-z@.]/.test(val)) {
+                                        setEmailError(validateEmail(val));
+                                        setPhoneError('');
+                                    } else if (val.length > 0) {
+                                        setPhoneError(validatePhone(val));
+                                        setEmailError('');
+                                    } else {
+                                        setEmailError('');
+                                        setPhoneError('');
+                                    }
+                                }
+                            }}
+                            placeholder={isRegistering && loginType === 'USER' ? "e.g. wanderer@flux.com or 9876543210" : "e.g. wanderer@flux.com"}
                             className="w-full px-6 py-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder:text-white/20 focus:outline-none focus:border-indigo-500 transition-all font-medium"
                             required
                         />
+                        {emailError && <p className="text-red-400 text-[10px] font-bold mt-1 ml-1 uppercase">{emailError}</p>}
+                        {phoneError && <p className="text-red-400 text-[10px] font-bold mt-1 ml-1 uppercase">{phoneError}</p>}
+                        {!emailError && !phoneError && isRegistering && loginType === 'USER' && (
+                            <p className="text-white/20 text-[9px] mt-1 ml-1 uppercase italic font-bold">Registration via Email or 10-digit Phone</p>
+                        )}
                     </div>
 
                     <div className="space-y-2">

@@ -131,6 +131,10 @@ export const dbService = {
     return await executeSql("UPDATE packages SET status=$1 WHERE package_id=$2", [status, id]);
   },
 
+  async updatePackageDates(id: number, dates: string) {
+    return await executeSql("UPDATE packages SET dates=$1 WHERE package_id=$2", [dates, id]);
+  },
+
   async getBookingsAdmin() {
     return await executeSql(`
       SELECT b.*, u.first_name as user_first_name, u.last_name as user_last_name, 
@@ -145,7 +149,33 @@ export const dbService = {
   },
 
   async updateBookingStatus(bookingId: number, status: string) {
-    return await executeSql("UPDATE bookings SET status=$1 WHERE booking_id=$2", [status, bookingId]);
+    const response = await fetch(`${BASE_URL}/api/bookings/${bookingId}/status`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status })
+    });
+    if (!response.ok) {
+      throw new Error('Failed to update booking status');
+    }
+    return await response.json();
+  },
+
+  async recordPayment(payment: {
+    booking_id: number;
+    amount: number;
+    method: string;
+    transaction_id?: string;
+    status: string;
+  }) {
+    const response = await fetch(`${BASE_URL}/api/payments`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payment)
+    });
+    if (!response.ok) {
+      throw new Error('Failed to record payment');
+    }
+    return await response.json();
   },
 
   async getCommissionsAdmin() {
@@ -160,11 +190,22 @@ export const dbService = {
     return await executeSql("SELECT * FROM payouts ORDER BY created_at DESC");
   },
 
-  async createPayoutAdmin(payout: any) {
-    return await executeSql(
-      "INSERT INTO payouts (associate_id, amount, payment_mode, transaction_reference, status, paid_at) VALUES ($1, $2, $3, $4, $5, NOW())",
-      [payout.associate_id, payout.amount, payout.payment_mode, payout.transaction_reference, payout.status || 'paid']
-    );
+  async createPayoutAdmin(payout: {
+    associate_id: number;
+    amount: number;
+    payment_mode: string;
+    transaction_reference: string;
+    commission_ids?: number[];
+  }) {
+    const response = await fetch(`${BASE_URL}/api/admin/payouts`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payout)
+    });
+    if (!response.ok) {
+      throw new Error('Failed to process payout');
+    }
+    return await response.json();
   },
 
   async getPromoCodesAdmin() {
@@ -173,6 +214,23 @@ export const dbService = {
 
   async getRefundsAdmin() {
     return await executeSql("SELECT * FROM refunds ORDER BY created_at DESC");
+  },
+
+  async issueRefundAdmin(refundData: {
+    booking_id: number;
+    payment_id: string;
+    amount: number;
+    reason: string;
+  }) {
+    const response = await fetch(`${BASE_URL}/api/admin/refunds`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(refundData)
+    });
+    if (!response.ok) {
+      throw new Error('Failed to process refund');
+    }
+    return await response.json();
   },
 
   async updateRefundStatus(refundId: number, status: string) {
@@ -193,6 +251,14 @@ export const dbService = {
 
   async deleteCommissionLevelAdmin(level: number) {
     return await executeSql("DELETE FROM commission_levels WHERE level = $1", [level]);
+  },
+
+  async getAssociateRankings() {
+    const response = await fetch(`${BASE_URL}/api/admin/associate-rankings`);
+    if (!response.ok) {
+      throw new Error('Failed to fetch associate rankings');
+    }
+    return await response.json();
   },
 
 

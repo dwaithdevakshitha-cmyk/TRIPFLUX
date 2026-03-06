@@ -10,10 +10,32 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onSuccess, onCancel }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState(false);
+  const [emailError, setEmailError] = useState('');
+
+  const validateEmail = (email: string) => {
+    const emailRegex = /^[a-zA-Z0-9_]+(\.[a-zA-Z0-9_]+)*@[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)+$/;
+    if (!email) return 'Email is required';
+    if (email.includes(' ')) return 'Spaces are not allowed in email';
+    if (!email.includes('@')) return 'Email must contain @ symbol';
+    if (!emailRegex.test(email)) {
+      const [username] = email.split('@');
+      if (username.startsWith('.') || username.endsWith('.')) return 'Username cannot start or end with a dot';
+      return 'Invalid email format (username@domain.com)';
+    }
+    return '';
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (email === 'admin@tripflux.com' && password === 'flux2025') {
+
+    const err = validateEmail(email);
+    if (err) {
+      setEmailError(err);
+      return;
+    }
+    setEmailError('');
+
+    if (email.toLowerCase() === 'admin@tripflux.com' && password === 'flux2025') {
       onSuccess();
     } else {
       setError(true);
@@ -45,11 +67,16 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onSuccess, onCancel }) => {
               <input
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setEmail(val);
+                  setEmailError(validateEmail(val));
+                }}
                 placeholder="admin@tripflux.com"
-                className={`w-full px-6 py-4 bg-slate-800 border ${error ? 'border-red-500 focus:ring-red-500/20' : 'border-slate-700 focus:ring-indigo-500/20'} rounded-2xl outline-none focus:ring-4 transition-all text-white tracking-widest text-center`}
+                className={`w-full px-6 py-4 bg-slate-800 border ${error || emailError ? 'border-red-500 focus:ring-red-500/20' : 'border-slate-700 focus:ring-indigo-500/20'} rounded-2xl outline-none focus:ring-4 transition-all text-white tracking-widest text-center`}
                 autoFocus
               />
+              {emailError && <p className="text-red-500 text-[10px] font-black uppercase tracking-tighter text-center mt-2">{emailError}</p>}
             </div>
             <div className="space-y-2">
               <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Admin Password</label>

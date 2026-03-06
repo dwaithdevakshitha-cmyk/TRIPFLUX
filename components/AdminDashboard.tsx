@@ -9,13 +9,16 @@ interface AdminDashboardProps {
 }
 
 const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onLogout }) => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'associates' | 'packages' | 'bookings' | 'commissions' | 'payouts' | 'promocodes' | 'refunds' | 'commissionlevels'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'associates' | 'rankings' | 'packages' | 'bookings' | 'commissions' | 'payouts' | 'promocodes' | 'refunds' | 'commissionlevels' | 'traveldates'>('overview');
 
   const [usersList, setUsersList] = useState<any[]>([]);
   const [userSearch, setUserSearch] = useState('');
 
   const [associatesList, setAssociatesList] = useState<any[]>([]);
   const [associateSearch, setAssociateSearch] = useState('');
+
+  const [rankingsList, setRankingsList] = useState<any[]>([]);
+  const [rankingSearch, setRankingSearch] = useState('');
 
   const [packagesList, setPackagesList] = useState<any[]>([]);
   const [packageSearch, setPackageSearch] = useState('');
@@ -99,6 +102,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onLogout }) =>
         if (activeTab === 'overview') setStats(await dbService.getAdminStats());
         if (activeTab === 'users') setUsersList(await dbService.getUsers());
         if (activeTab === 'associates') setAssociatesList(await dbService.getAssociates());
+        if (activeTab === 'rankings') setRankingsList(await dbService.getAssociateRankings());
         if (activeTab === 'packages') setPackagesList(await dbService.getPackagesAdmin());
         if (activeTab === 'bookings') setBookingsList(await dbService.getBookingsAdmin());
         if (activeTab === 'commissions') setCommissionsList(await dbService.getCommissionsAdmin());
@@ -106,6 +110,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onLogout }) =>
         if (activeTab === 'promocodes') setPromoCodesList(await dbService.getPromoCodesAdmin());
         if (activeTab === 'refunds') setRefundsList(await dbService.getRefundsAdmin());
         if (activeTab === 'commissionlevels') setCommissionLevelsList(await dbService.getCommissionLevelsAdmin());
+        if (activeTab === 'traveldates') setPackagesList(await dbService.getPackagesAdmin());
       } catch (e) {
         console.error("Fetch area error:", e);
       }
@@ -122,7 +127,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onLogout }) =>
 
     const formattedItinerary: any[] = [];
     const daysMap = new Map<number, any>();
-    
+
     itineraryRows.forEach(row => {
       if (!daysMap.has(row.day)) {
         daysMap.set(row.day, { day: row.day, title: `Day ${row.day}`, activities: [] });
@@ -133,7 +138,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onLogout }) =>
         description: row.description
       });
     });
-    
+
     const finalItinerary = Array.from(daysMap.values()).sort((a, b) => a.day - b.day);
 
     setIsSaving(true);
@@ -146,7 +151,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onLogout }) =>
         await dbService.createPackageAdmin(packageData);
         alert("Package added successfully!");
       }
-      
+
       setShowAddModal(false);
       setEditingPackageId(null);
       setNewPackage({
@@ -225,6 +230,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onLogout }) =>
             { id: 'overview', icon: '📊', label: 'Dashboard' },
             { id: 'users', icon: '👥', label: 'Users' },
             { id: 'associates', icon: '💼', label: 'Associates' },
+            { id: 'rankings', icon: '🏆', label: 'Rankings' },
             { id: 'packages', icon: '📦', label: 'Packages' },
             { id: 'bookings', icon: '📅', label: 'Bookings' },
             { id: 'commissions', icon: '💰', label: 'Commissions' },
@@ -232,6 +238,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onLogout }) =>
             { id: 'promocodes', icon: '🎟️', label: 'Promo Codes' },
             { id: 'refunds', icon: '🔄', label: 'Refunds' },
             { id: 'commissionlevels', icon: '⚖️', label: 'Commission Levels' },
+            { id: 'traveldates', icon: '📅', label: 'Travel Dates' },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -409,6 +416,64 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onLogout }) =>
               </table>
             </div>
           </div>
+        ) : activeTab === 'rankings' ? (
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 bg-white p-8 rounded-3xl shadow-xl">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-2xl font-black text-slate-900 uppercase">Associate Rankings</h3>
+              <div className="flex gap-4">
+                <input
+                  type="text"
+                  placeholder="Search Rank/ID/Name..."
+                  value={rankingSearch}
+                  onChange={(e) => setRankingSearch(e.target.value)}
+                  className="px-4 py-2 border border-slate-200 rounded-xl text-sm"
+                />
+              </div>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="border-b uppercase text-[10px] font-black text-slate-400">
+                    <th className="p-3">Associate Name</th>
+                    <th className="p-3">Associate ID</th>
+                    <th className="p-3 text-center">Rank</th>
+                    <th className="p-3 text-right">Team Turnover</th>
+                    <th className="p-3 text-center">Downline</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rankingsList.filter(r => `${r.name} ${r.custom_id} ${r.rank}`.toLowerCase().includes(rankingSearch.toLowerCase())).map((r, idx) => (
+                    <tr key={idx} className="border-b hover:bg-slate-50 transition-colors">
+                      <td className="p-3">
+                        <div className="font-bold text-slate-900 uppercase tracking-wider">{r.name}</div>
+                      </td>
+                      <td className="p-3">
+                        <span className="font-mono text-indigo-600 font-bold bg-indigo-50 px-2 py-1 rounded text-xs">{r.custom_id}</span>
+                      </td>
+                      <td className="p-3 text-center">
+                        <span className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest ${r.rank === 'Crown Associate' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20' :
+                          r.rank === 'Platinum Associate' ? 'bg-slate-200 text-slate-800' :
+                            r.rank === 'Diamond Associate' ? 'bg-indigo-400 text-white' :
+                              r.rank === 'Gold Associate' ? 'bg-amber-400 text-amber-950' :
+                                r.rank === 'Silver Associate' ? 'bg-slate-400 text-slate-900' :
+                                  r.rank === 'Bronze Associate' ? 'bg-orange-700 text-white' :
+                                    'bg-slate-800 text-slate-400'
+                          }`}>
+                          {r.rank || 'Associate'}
+                        </span>
+                      </td>
+                      <td className="p-3 text-right">
+                        <span className="text-slate-900 font-black tracking-tight text-sm">₹{parseFloat(r.team_turnover).toLocaleString('en-IN')}</span>
+                      </td>
+                      <td className="p-3 text-center">
+                        <span className="text-slate-500 font-bold text-xs">{r.downline_count} Members</span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
         ) : activeTab === 'packages' ? (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 bg-white p-8 rounded-3xl shadow-xl">
             <div className="flex justify-between items-center mb-6">
@@ -484,7 +549,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onLogout }) =>
                               track: p.track || '',
                               status: p.status
                             });
-                            
+
                             // Load itinerary rows
                             const rows: { day: number; activity: string; description: string }[] = [];
                             if (p.itinerary && Array.isArray(p.itinerary)) {
@@ -776,7 +841,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onLogout }) =>
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 bg-white p-8 rounded-3xl shadow-xl">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-2xl font-black text-slate-900 uppercase">Commission Levels</h3>
-              <button 
+              <button
                 onClick={() => {
                   setEditingLevel(null);
                   setNewLevelData({ level: '', percentage: '' });
@@ -830,303 +895,434 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onLogout }) =>
               </table>
             </div>
           </div>
-        ) : null}
-      </div>
-
-      {/* Add Package Modal */}
-      {showAddModal && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl w-full max-w-4xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
-            <div className="p-8 border-b border-slate-100 flex justify-between items-center">
-              <div>
-                <h3 className="text-2xl font-black text-slate-900 uppercase">{editingPackageId ? 'Edit Tour Package' : 'Add New Tour Package'}</h3>
-                <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">{editingPackageId ? `ID: #${editingPackageId}` : 'Manual Entry'}</p>
-              </div>
-              <button 
-                onClick={() => setShowAddModal(false)}
-                className="w-10 h-10 rounded-full hover:bg-slate-50 flex items-center justify-center text-slate-400 hover:text-slate-900 transition-all"
-              >
-                ✕
-              </button>
-            </div>
-            <form onSubmit={handleAddPackage} className="flex flex-col max-h-[90vh]">
-              <div className="p-8 space-y-6 overflow-y-auto custom-scrollbar">
-              <div className="grid grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Package Name *</label>
-                  <input
-                    required
-                    type="text"
-                    value={newPackage.name}
-                    onChange={(e) => setNewPackage({ ...newPackage, name: e.target.value })}
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-600 focus:bg-white outline-none transition-all text-sm"
-                    placeholder="e.g. KASHMIR SPECIAL"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Destination *</label>
-                  <input
-                    required
-                    type="text"
-                    value={newPackage.destination}
-                    onChange={(e) => setNewPackage({ ...newPackage, destination: e.target.value })}
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-600 focus:bg-white outline-none transition-all text-sm"
-                    placeholder="e.g. Gulmarg, Srinigar"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Category *</label>
-                  <select
-                    required
-                    value={newPackage.category}
-                    onChange={(e) => setNewPackage({ ...newPackage, category: e.target.value })}
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-600 focus:bg-white outline-none transition-all text-sm"
-                  >
-                    <option value="Domestic">Domestic</option>
-                    <option value="International">International</option>
-                    <option value="Temple">Temple</option>
-                    <option value="Pilgrimage">Pilgrimage</option>
-                    <option value="Adventure">Adventure</option>
-                  </select>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Duration *</label>
-                  <input
-                    required
-                    type="text"
-                    value={newPackage.duration}
-                    onChange={(e) => setNewPackage({ ...newPackage, duration: e.target.value })}
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-600 focus:bg-white outline-none transition-all text-sm"
-                    placeholder="e.g. 6 Nights - 7 Days"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Price (₹) *</label>
-                  <input
-                    required
-                    type="number"
-                    value={newPackage.price}
-                    onChange={(e) => setNewPackage({ ...newPackage, price: e.target.value })}
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-600 focus:bg-white outline-none transition-all text-sm font-mono"
-                    placeholder="25000"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Status</label>
-                  <select
-                    value={newPackage.status}
-                    onChange={(e) => setNewPackage({ ...newPackage, status: e.target.value })}
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-600 focus:bg-white outline-none transition-all text-sm"
-                  >
-                    <option value="active">Active</option>
-                    <option value="inactive">Inactive</option>
-                  </select>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Current Location</label>
-                  <input
-                    type="text"
-                    value={newPackage.location}
-                    onChange={(e) => setNewPackage({ ...newPackage, location: e.target.value })}
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-600 focus:bg-white outline-none transition-all text-sm"
-                    placeholder="e.g. Near Mall Road"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Tourist Track (Places)</label>
-                  <input
-                    type="text"
-                    value={newPackage.track}
-                    onChange={(e) => setNewPackage({ ...newPackage, track: e.target.value })}
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-600 focus:bg-white outline-none transition-all text-sm"
-                    placeholder="e.g. Delhi > Agra > Jaipur"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Package Image</label>
-                <div className="flex items-center gap-4">
-                  {newPackage.image && (
-                    <img 
-                      src={newPackage.image} 
-                      alt="Preview" 
-                      className="w-20 h-20 object-cover rounded-xl border-2 border-slate-100"
-                    />
-                  )}
-                  <div className="flex-1">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageChange}
-                      className="hidden"
-                      id="package-image-upload"
-                    />
-                    <label 
-                      htmlFor="package-image-upload"
-                      className="inline-block px-6 py-3 bg-slate-50 border border-dashed border-slate-200 rounded-2xl text-xs font-bold text-slate-500 cursor-pointer hover:bg-slate-100 transition-all text-center w-full"
-                    >
-                      {newPackage.image ? 'Change Image' : 'Click to Upload Package Image'}
-                    </label>
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Description / Highlights</label>
-                <textarea
-                  value={newPackage.description}
-                  onChange={(e) => setNewPackage({ ...newPackage, description: e.target.value })}
-                  className="w-full h-24 px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-600 focus:bg-white outline-none transition-all text-sm"
-                  placeholder="Enter package details, inclusions or highlights..."
+        ) : activeTab === 'traveldates' ? (
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 bg-white p-8 rounded-3xl shadow-xl">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-2xl font-black text-slate-900 uppercase">Travel Dates Management</h3>
+              <div className="flex gap-4">
+                <input
+                  type="text"
+                  placeholder="Search Packages..."
+                  value={packageSearch}
+                  onChange={(e) => setPackageSearch(e.target.value)}
+                  className="px-4 py-2 border border-slate-200 rounded-xl text-sm"
                 />
               </div>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="border-b uppercase text-[10px] font-black text-slate-400">
+                    <th className="p-3">Package Name</th>
+                    <th className="p-3">Category</th>
+                    <th className="p-3">Current Dates</th>
+                    <th className="p-3">Manage Dates</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {packagesList.filter(p => p.name.toLowerCase().includes(packageSearch.toLowerCase())).map(p => (
+                    <tr key={p.package_id} className="border-b hover:bg-slate-50">
+                      <td className="p-3 font-bold">{p.name}</td>
+                      <td className="p-3 text-[10px] uppercase font-medium">{p.category}</td>
+                      <td className="p-3">
+                        <div className="flex flex-wrap gap-1 max-w-md">
+                          {p.dates && p.dates !== '2025 Flexible' ? (
+                            p.dates.split(',').map((date: string, idx: number) => (
+                              <span key={idx} className="px-2 py-1 bg-indigo-50 text-indigo-700 rounded text-[10px] font-bold border border-indigo-100">
+                                {date.trim()}
+                              </span>
+                            ))
+                          ) : (
+                            <span className="text-slate-400 text-[10px] font-bold italic uppercase tracking-widest">
+                              {p.dates || 'No Dates Set'}
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="p-3">
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="date"
+                            id={`add-date-${p.package_id}`}
+                            className="text-xs border border-slate-200 rounded p-1.5 focus:border-indigo-500 outline-none"
+                          />
+                          <button
+                            onClick={async () => {
+                              const input = document.getElementById(`add-date-${p.package_id}`) as HTMLInputElement;
+                              const newDate = input.value;
+                              if (!newDate) return;
 
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Day-wise Itinerary</label>
-                  <button 
-                    type="button" 
-                    onClick={addItineraryRow}
-                    className="text-[10px] font-black text-indigo-600 uppercase hover:text-indigo-700"
-                  >
-                    + Add Day/Entry
-                  </button>
+                              let currentDatesRaw = p.dates === '2025 Flexible' || !p.dates ? '' : p.dates;
+                              let dateArray = currentDatesRaw.split(',').map((d: string) => d.trim()).filter(Boolean);
+
+                              if (dateArray.includes(newDate)) {
+                                alert('This date is already added.');
+                                return;
+                              }
+
+                              dateArray.push(newDate);
+                              dateArray.sort();
+                              const finalDates = dateArray.join(',');
+
+                              try {
+                                await dbService.updatePackageDates(p.package_id, finalDates);
+                                input.value = '';
+                                setPackagesList(await dbService.getPackagesAdmin());
+                              } catch (err) {
+                                alert('Failed to add date');
+                              }
+                            }}
+                            className="bg-indigo-600 text-white text-[10px] px-3 py-1.5 rounded font-black uppercase tracking-widest hover:bg-black transition-all"
+                          >
+                            Add
+                          </button>
+                          {p.dates && p.dates !== '2025 Flexible' && (
+                            <button
+                              onClick={() => {
+                                const dateToRemove = prompt('Enter the exact date to remove (YYYY-MM-DD):', '');
+                                if (!dateToRemove) return;
+
+                                let dateArray = p.dates.split(',').map((d: string) => d.trim()).filter(Boolean);
+                                const newArray = dateArray.filter((d: string) => d !== dateToRemove);
+
+                                if (dateArray.length === newArray.length) {
+                                  alert('Date not found in current list.');
+                                  return;
+                                }
+
+                                dbService.updatePackageDates(p.package_id, newArray.join(',') || '2025 Flexible')
+                                  .then(() => dbService.getPackagesAdmin())
+                                  .then(res => setPackagesList(res))
+                                  .catch(() => alert('Failed to update'));
+                              }}
+                              className="text-red-500 hover:text-red-700 text-[10px] font-black uppercase tracking-widest bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded"
+                            >
+                              Remove
+                            </button>
+                          )}
+                          <button
+                            onClick={() => {
+                              const newDatesValue = prompt('Edit all dates (comma separated):', p.dates);
+                              if (newDatesValue === null) return;
+
+                              dbService.updatePackageDates(p.package_id, newDatesValue || '2025 Flexible')
+                                .then(() => dbService.getPackagesAdmin())
+                                .then(res => setPackagesList(res))
+                                .catch(() => alert('Failed to update'));
+                            }}
+                            className="text-slate-500 hover:text-slate-800 text-[10px] font-black uppercase tracking-widest bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded"
+                          >
+                            Edit All
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ) : null}
+      </div >
+
+      {/* Add Package Modal */}
+      {
+        showAddModal && (
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
+            <div className="bg-white rounded-3xl w-full max-w-4xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
+              <div className="p-8 border-b border-slate-100 flex justify-between items-center">
+                <div>
+                  <h3 className="text-2xl font-black text-slate-900 uppercase">{editingPackageId ? 'Edit Tour Package' : 'Add New Tour Package'}</h3>
+                  <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">{editingPackageId ? `ID: #${editingPackageId}` : 'Manual Entry'}</p>
                 </div>
-                
-                <div className="space-y-3 max-h-60 overflow-y-auto pr-2">
-                  {itineraryRows.map((row, idx) => (
-                    <div key={idx} className="p-4 bg-slate-50 rounded-2xl border border-slate-100 space-y-3 relative group">
-                      <button 
-                        type="button"
-                        onClick={() => removeItineraryRow(idx)}
-                        className="absolute top-2 right-2 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all font-bold text-xs"
+                <button
+                  onClick={() => setShowAddModal(false)}
+                  className="w-10 h-10 rounded-full hover:bg-slate-50 flex items-center justify-center text-slate-400 hover:text-slate-900 transition-all"
+                >
+                  ✕
+                </button>
+              </div>
+              <form onSubmit={handleAddPackage} className="flex flex-col max-h-[90vh]">
+                <div className="p-8 space-y-6 overflow-y-auto custom-scrollbar">
+                  <div className="grid grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Package Name *</label>
+                      <input
+                        required
+                        type="text"
+                        value={newPackage.name}
+                        onChange={(e) => setNewPackage({ ...newPackage, name: e.target.value })}
+                        className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-600 focus:bg-white outline-none transition-all text-sm"
+                        placeholder="e.g. KASHMIR SPECIAL"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Destination *</label>
+                      <input
+                        required
+                        type="text"
+                        value={newPackage.destination}
+                        onChange={(e) => setNewPackage({ ...newPackage, destination: e.target.value })}
+                        className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-600 focus:bg-white outline-none transition-all text-sm"
+                        placeholder="e.g. Gulmarg, Srinigar"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Category *</label>
+                      <select
+                        required
+                        value={newPackage.category}
+                        onChange={(e) => setNewPackage({ ...newPackage, category: e.target.value })}
+                        className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-600 focus:bg-white outline-none transition-all text-sm"
                       >
-                        ✕
-                      </button>
-                      <div className="grid grid-cols-4 gap-3">
-                        <div className="col-span-1">
-                          <label className="text-[9px] font-bold text-slate-400 uppercase">Day</label>
-                          <input 
-                            type="number"
-                            value={row.day}
-                            onChange={(e) => updateItineraryRow(idx, 'day', parseInt(e.target.value))}
-                            className="w-full px-3 py-2 bg-white border border-slate-100 rounded-xl text-xs outline-none focus:ring-1 focus:ring-indigo-500"
-                          />
-                        </div>
-                        <div className="col-span-3">
-                          <label className="text-[9px] font-bold text-slate-400 uppercase">Activity</label>
-                          <input 
-                            type="text"
-                            value={row.activity}
-                            onChange={(e) => updateItineraryRow(idx, 'activity', e.target.value)}
-                            className="w-full px-3 py-2 bg-white border border-slate-100 rounded-xl text-xs outline-none focus:ring-1 focus:ring-indigo-500"
-                            placeholder="e.g. Arrival & Hotel Check-in"
-                          />
-                        </div>
-                      </div>
-                      <div>
-                        <label className="text-[9px] font-bold text-slate-400 uppercase">Description</label>
-                        <textarea 
-                          value={row.description}
-                          onChange={(e) => updateItineraryRow(idx, 'description', e.target.value)}
-                          className="w-full h-16 px-3 py-2 bg-white border border-slate-100 rounded-xl text-xs outline-none focus:ring-1 focus:ring-indigo-500"
-                          placeholder="What will tourists do on this day?"
+                        <option value="Domestic">Domestic</option>
+                        <option value="International">International</option>
+                        <option value="Temple">Temple</option>
+                        <option value="Pilgrimage">Pilgrimage</option>
+                        <option value="Adventure">Adventure</option>
+                      </select>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Duration *</label>
+                      <input
+                        required
+                        type="text"
+                        value={newPackage.duration}
+                        onChange={(e) => setNewPackage({ ...newPackage, duration: e.target.value })}
+                        className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-600 focus:bg-white outline-none transition-all text-sm"
+                        placeholder="e.g. 6 Nights - 7 Days"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Price (₹) *</label>
+                      <input
+                        required
+                        type="number"
+                        value={newPackage.price}
+                        onChange={(e) => setNewPackage({ ...newPackage, price: e.target.value })}
+                        className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-600 focus:bg-white outline-none transition-all text-sm font-mono"
+                        placeholder="25000"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Status</label>
+                      <select
+                        value={newPackage.status}
+                        onChange={(e) => setNewPackage({ ...newPackage, status: e.target.value })}
+                        className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-600 focus:bg-white outline-none transition-all text-sm"
+                      >
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                      </select>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Current Location</label>
+                      <input
+                        type="text"
+                        value={newPackage.location}
+                        onChange={(e) => setNewPackage({ ...newPackage, location: e.target.value })}
+                        className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-600 focus:bg-white outline-none transition-all text-sm"
+                        placeholder="e.g. Near Mall Road"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Tourist Track (Places)</label>
+                      <input
+                        type="text"
+                        value={newPackage.track}
+                        onChange={(e) => setNewPackage({ ...newPackage, track: e.target.value })}
+                        className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-600 focus:bg-white outline-none transition-all text-sm"
+                        placeholder="e.g. Delhi > Agra > Jaipur"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Package Image</label>
+                    <div className="flex items-center gap-4">
+                      {newPackage.image && (
+                        <img
+                          src={newPackage.image}
+                          alt="Preview"
+                          className="w-20 h-20 object-cover rounded-xl border-2 border-slate-100"
                         />
+                      )}
+                      <div className="flex-1">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleImageChange}
+                          className="hidden"
+                          id="package-image-upload"
+                        />
+                        <label
+                          htmlFor="package-image-upload"
+                          className="inline-block px-6 py-3 bg-slate-50 border border-dashed border-slate-200 rounded-2xl text-xs font-bold text-slate-500 cursor-pointer hover:bg-slate-100 transition-all text-center w-full"
+                        >
+                          {newPackage.image ? 'Change Image' : 'Click to Upload Package Image'}
+                        </label>
                       </div>
                     </div>
-                  ))}
-                  {itineraryRows.length === 0 && (
-                    <p className="text-center py-4 text-xs text-slate-400 font-medium italic">No itinerary entries added yet.</p>
-                  )}
-                </div>
-              </div>
-            </div>
+                  </div>
 
-            <div className="p-8 border-t border-slate-100 flex gap-4 bg-slate-50/50">
-                <button
-                  type="button"
-                  onClick={() => setShowAddModal(false)}
-                  className="flex-1 px-8 py-4 border border-slate-200 text-slate-400 font-bold rounded-2xl hover:bg-slate-50 transition-all uppercase text-xs tracking-widest"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSaving}
-                  className="flex-2 px-12 py-4 bg-indigo-600 text-white font-black rounded-2xl hover:bg-black transition-all shadow-xl shadow-indigo-600/30 uppercase text-xs tracking-widest disabled:opacity-50"
-                >
-                  {isSaving ? 'Processing...' : (editingPackageId ? 'Update Package' : 'Add Package')}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-      {/* Commission Level Modal */}
-      {showLevelModal && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[70] flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
-            <div className="p-8 border-b border-slate-100 flex justify-between items-center">
-              <div>
-                <h3 className="text-2xl font-black text-slate-900 uppercase">{editingLevel ? 'Edit Level' : 'Add New Level'}</h3>
-                <p className="text-xs font-bold text-slate-400 mt-1 uppercase tracking-widest">Adjust MLM commission rules</p>
-              </div>
-              <button 
-                onClick={() => setShowLevelModal(false)}
-                className="w-10 h-10 rounded-full hover:bg-slate-50 flex items-center justify-center text-slate-400 hover:text-slate-900 transition-all"
-              >
-                ✕
-              </button>
+                  <div className="space-y-2">
+                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Description / Highlights</label>
+                    <textarea
+                      value={newPackage.description}
+                      onChange={(e) => setNewPackage({ ...newPackage, description: e.target.value })}
+                      className="w-full h-24 px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-600 focus:bg-white outline-none transition-all text-sm"
+                      placeholder="Enter package details, inclusions or highlights..."
+                    />
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Day-wise Itinerary</label>
+                      <button
+                        type="button"
+                        onClick={addItineraryRow}
+                        className="text-[10px] font-black text-indigo-600 uppercase hover:text-indigo-700"
+                      >
+                        + Add Day/Entry
+                      </button>
+                    </div>
+
+                    <div className="space-y-3 max-h-60 overflow-y-auto pr-2">
+                      {itineraryRows.map((row, idx) => (
+                        <div key={idx} className="p-4 bg-slate-50 rounded-2xl border border-slate-100 space-y-3 relative group">
+                          <button
+                            type="button"
+                            onClick={() => removeItineraryRow(idx)}
+                            className="absolute top-2 right-2 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all font-bold text-xs"
+                          >
+                            ✕
+                          </button>
+                          <div className="grid grid-cols-4 gap-3">
+                            <div className="col-span-1">
+                              <label className="text-[9px] font-bold text-slate-400 uppercase">Day</label>
+                              <input
+                                type="number"
+                                value={row.day}
+                                onChange={(e) => updateItineraryRow(idx, 'day', parseInt(e.target.value))}
+                                className="w-full px-3 py-2 bg-white border border-slate-100 rounded-xl text-xs outline-none focus:ring-1 focus:ring-indigo-500"
+                              />
+                            </div>
+                            <div className="col-span-3">
+                              <label className="text-[9px] font-bold text-slate-400 uppercase">Activity</label>
+                              <input
+                                type="text"
+                                value={row.activity}
+                                onChange={(e) => updateItineraryRow(idx, 'activity', e.target.value)}
+                                className="w-full px-3 py-2 bg-white border border-slate-100 rounded-xl text-xs outline-none focus:ring-1 focus:ring-indigo-500"
+                                placeholder="e.g. Arrival & Hotel Check-in"
+                              />
+                            </div>
+                          </div>
+                          <div>
+                            <label className="text-[9px] font-bold text-slate-400 uppercase">Description</label>
+                            <textarea
+                              value={row.description}
+                              onChange={(e) => updateItineraryRow(idx, 'description', e.target.value)}
+                              className="w-full h-16 px-3 py-2 bg-white border border-slate-100 rounded-xl text-xs outline-none focus:ring-1 focus:ring-indigo-500"
+                              placeholder="What will tourists do on this day?"
+                            />
+                          </div>
+                        </div>
+                      ))}
+                      {itineraryRows.length === 0 && (
+                        <p className="text-center py-4 text-xs text-slate-400 font-medium italic">No itinerary entries added yet.</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-8 border-t border-slate-100 flex gap-4 bg-slate-50/50">
+                  <button
+                    type="button"
+                    onClick={() => setShowAddModal(false)}
+                    className="flex-1 px-8 py-4 border border-slate-200 text-slate-400 font-bold rounded-2xl hover:bg-slate-50 transition-all uppercase text-xs tracking-widest"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSaving}
+                    className="flex-2 px-12 py-4 bg-indigo-600 text-white font-black rounded-2xl hover:bg-black transition-all shadow-xl shadow-indigo-600/30 uppercase text-xs tracking-widest disabled:opacity-50"
+                  >
+                    {isSaving ? 'Processing...' : (editingPackageId ? 'Update Package' : 'Add Package')}
+                  </button>
+                </div>
+              </form>
             </div>
-            <form onSubmit={handleLevelSubmit}>
-              <div className="p-8 space-y-6">
-                <div className="space-y-2">
-                  <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Level Number</label>
-                  <input
-                    required
-                    type="number"
-                    disabled={!!editingLevel}
-                    value={newLevelData.level}
-                    onChange={(e) => setNewLevelData({ ...newLevelData, level: e.target.value })}
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-600 focus:bg-white outline-none transition-all text-sm disabled:opacity-50"
-                    placeholder="e.g. 1"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Percentage (%)</label>
-                  <input
-                    required
-                    type="number"
-                    step="0.01"
-                    value={newLevelData.percentage}
-                    onChange={(e) => setNewLevelData({ ...newLevelData, percentage: e.target.value })}
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-600 focus:bg-white outline-none transition-all text-sm"
-                    placeholder="e.g. 5"
-                  />
-                </div>
-              </div>
-              <div className="p-8 border-t border-slate-100 flex gap-4 bg-slate-50/50">
-                <button
-                  type="button"
-                  onClick={() => setShowLevelModal(false)}
-                  className="flex-1 px-8 py-4 border border-slate-200 text-slate-400 font-bold rounded-2xl hover:bg-slate-50 transition-all uppercase text-xs tracking-widest"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSaving}
-                  className="flex-2 px-12 py-4 bg-indigo-600 text-white font-black rounded-2xl hover:bg-black transition-all shadow-xl shadow-indigo-600/30 uppercase text-xs tracking-widest disabled:opacity-50"
-                >
-                  {isSaving ? 'Saving...' : (editingLevel ? 'Update' : 'Create')}
-                </button>
-              </div>
-            </form>
           </div>
-        </div>
-      )}
-    </div>
+        )
+      }
+      {/* Commission Level Modal */}
+      {
+        showLevelModal && (
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[70] flex items-center justify-center p-4">
+            <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
+              <div className="p-8 border-b border-slate-100 flex justify-between items-center">
+                <div>
+                  <h3 className="text-2xl font-black text-slate-900 uppercase">{editingLevel ? 'Edit Level' : 'Add New Level'}</h3>
+                  <p className="text-xs font-bold text-slate-400 mt-1 uppercase tracking-widest">Adjust MLM commission rules</p>
+                </div>
+                <button
+                  onClick={() => setShowLevelModal(false)}
+                  className="w-10 h-10 rounded-full hover:bg-slate-50 flex items-center justify-center text-slate-400 hover:text-slate-900 transition-all"
+                >
+                  ✕
+                </button>
+              </div>
+              <form onSubmit={handleLevelSubmit}>
+                <div className="p-8 space-y-6">
+                  <div className="space-y-2">
+                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Level Number</label>
+                    <input
+                      required
+                      type="number"
+                      disabled={!!editingLevel}
+                      value={newLevelData.level}
+                      onChange={(e) => setNewLevelData({ ...newLevelData, level: e.target.value })}
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-600 focus:bg-white outline-none transition-all text-sm disabled:opacity-50"
+                      placeholder="e.g. 1"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Percentage (%)</label>
+                    <input
+                      required
+                      type="number"
+                      step="0.01"
+                      value={newLevelData.percentage}
+                      onChange={(e) => setNewLevelData({ ...newLevelData, percentage: e.target.value })}
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-600 focus:bg-white outline-none transition-all text-sm"
+                      placeholder="e.g. 5"
+                    />
+                  </div>
+                </div>
+                <div className="p-8 border-t border-slate-100 flex gap-4 bg-slate-50/50">
+                  <button
+                    type="button"
+                    onClick={() => setShowLevelModal(false)}
+                    className="flex-1 px-8 py-4 border border-slate-200 text-slate-400 font-bold rounded-2xl hover:bg-slate-50 transition-all uppercase text-xs tracking-widest"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSaving}
+                    className="flex-2 px-12 py-4 bg-indigo-600 text-white font-black rounded-2xl hover:bg-black transition-all shadow-xl shadow-indigo-600/30 uppercase text-xs tracking-widest disabled:opacity-50"
+                  >
+                    {isSaving ? 'Saving...' : (editingLevel ? 'Update' : 'Create')}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )
+      }
+    </div >
   );
 };
 

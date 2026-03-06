@@ -20,6 +20,29 @@ const SignUp: React.FC<SignUpProps> = ({ onBack, onSuccess }) => {
         confirmPassword: ''
     });
     const [error, setError] = useState('');
+    const [emailError, setEmailError] = useState('');
+    const [phoneError, setPhoneError] = useState('');
+
+    const validateEmail = (email: string) => {
+        const emailRegex = /^[a-zA-Z0-9_]+(\.[a-zA-Z0-9_]+)*@[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)+$/;
+        if (!email) return 'Email is required';
+        if (email.includes(' ')) return 'Spaces are not allowed in email';
+        if (!email.includes('@')) return 'Email must contain @ symbol';
+        if (!emailRegex.test(email)) {
+            const [username] = email.split('@');
+            if (username.startsWith('.') || username.endsWith('.')) return 'Username cannot start or end with a dot';
+            return 'Invalid email format (e.g. username@domain.com)';
+        }
+        return '';
+    };
+
+    const validatePhone = (phone: string) => {
+        if (!phone) return 'Phone number is required';
+        if (!/^\d+$/.test(phone)) return 'Only numbers (0-9) are allowed';
+        if (phone.length !== 10) return 'Phone number must be exactly 10 digits';
+        if (!/^[6-9]/.test(phone)) return 'Number must start with 6, 7, 8, or 9';
+        return '';
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -47,8 +70,15 @@ const SignUp: React.FC<SignUpProps> = ({ onBack, onSuccess }) => {
             }
 
             const phoneRegex = /^\d{10}$/;
-            if (!phoneRegex.test(formData.phoneNumber)) {
-                setError('Phone number must be exactly 10 digits.');
+            const phoneErr = validatePhone(formData.phoneNumber);
+            if (phoneErr) {
+                setError(phoneErr);
+                return;
+            }
+
+            const emailErr = validateEmail(formData.emailOrPhone);
+            if (emailErr) {
+                setError(emailErr);
                 return;
             }
 
@@ -189,11 +219,12 @@ const SignUp: React.FC<SignUpProps> = ({ onBack, onSuccess }) => {
                                         onChange={(e) => {
                                             let val = e.target.value.replace(/\D/g, '');
                                             if (val.length > 10) val = val.slice(0, 10);
-                                            e.target.value = val; // Force DOM node override to stop bypasses
                                             setFormData({ ...formData, phoneNumber: val });
+                                            setPhoneError(validatePhone(val));
                                         }}
                                         required
                                     />
+                                    {phoneError && <p className="text-red-500 text-[9px] font-bold mt-1 ml-1 uppercase">{phoneError}</p>}
                                 </div>
                                 <div className="space-y-1.5">
                                     <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Date of Birth</label>
@@ -240,8 +271,17 @@ const SignUp: React.FC<SignUpProps> = ({ onBack, onSuccess }) => {
                             placeholder={isSignIn ? "e.g. alex@tripflux.ai" : "e.g. email@example.com"}
                             className="w-full px-6 py-4 bg-slate-50 border-2 border-slate-50 rounded-2xl focus:bg-white focus:border-indigo-600 focus:outline-none transition-all font-bold text-slate-700"
                             value={formData.emailOrPhone}
-                            onChange={(e) => setFormData({ ...formData, emailOrPhone: e.target.value })}
+                            onChange={(e) => {
+                                let val = e.target.value.toLowerCase();
+                                // If input is numeric-only, cap at 10 digits
+                                if (/^\d+$/.test(val)) {
+                                    val = val.slice(0, 10);
+                                }
+                                setFormData({ ...formData, emailOrPhone: val });
+                                if (!isSignIn) setEmailError(validateEmail(val));
+                            }}
                         />
+                        {!isSignIn && emailError && <p className="text-red-500 text-[9px] font-bold mt-1 ml-1 uppercase">{emailError}</p>}
                     </div>
 
                     <div className="space-y-1.5">

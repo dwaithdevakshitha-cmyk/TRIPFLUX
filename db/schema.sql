@@ -15,6 +15,8 @@ CREATE TABLE login_details (
     date_of_birth DATE,
     kyc_status VARCHAR(20),
     status VARCHAR(20) DEFAULT 'active',
+    rank VARCHAR(50) DEFAULT 'Associate',
+    avatar TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -45,6 +47,26 @@ INSERT INTO commission_levels (level, percentage) VALUES
 (7, 0.50);
 
 -- =========================================
+-- 3a) RANK LEVELS (MLM Titles)
+-- =========================================
+CREATE TABLE rank_levels (
+    rank_id SERIAL PRIMARY KEY,
+    rank_name VARCHAR(100) UNIQUE NOT NULL,
+    turnover_required NUMERIC(15,2) NOT NULL,
+    level_order INT NOT NULL
+);
+
+INSERT INTO rank_levels (rank_name, turnover_required, level_order) VALUES
+('Associate', 0, 1),
+('Bronze Associate', 100000, 2),
+('Silver Associate', 500000, 3),
+('Gold Associate', 1000000, 4),
+('Diamond Associate', 2500000, 5),
+('Platinum Associate', 5000000, 6),
+('Crown Associate', 10000000, 7)
+ON CONFLICT (rank_name) DO NOTHING;
+
+-- =========================================
 -- 4) PROMO CODES (Associate Tracking)
 -- =========================================
 CREATE TABLE promo_codes (
@@ -65,6 +87,8 @@ CREATE TABLE packages (
     duration VARCHAR(50),
     price NUMERIC(10,2),
     description TEXT,
+    dates VARCHAR(100),
+    travel_type VARCHAR(50) DEFAULT 'flight',
     status VARCHAR(20) DEFAULT 'active',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -88,6 +112,7 @@ CREATE TABLE bookings (
     travel_date DATE,
     total_amount NUMERIC(10,2),
     status VARCHAR(20) DEFAULT 'pending',
+    user_email TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

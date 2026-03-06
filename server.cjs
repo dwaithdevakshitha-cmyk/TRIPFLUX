@@ -6,6 +6,46 @@ require('dotenv').config();
 const app = express();
 const port = process.env.PORT || 3001;
 
+async function updateAssociateRank(associateId) {
+  if (!associateId) return;
+  try {
+    const rankLevelsRes = await pool.query('SELECT rank_name as name, turnover_required as min FROM rank_levels ORDER BY turnover_required DESC');
+    const dynamicRankThresholds = rankLevelsRes.rows;
+
+    const turnoverQuery = `
+      WITH RECURSIVE downline AS (
+        SELECT associate_id FROM associate_hierarchy WHERE associate_id = $1
+        UNION ALL
+        SELECT h.associate_id FROM associate_hierarchy h
+        INNER JOIN downline d ON h.parent_associate_id = d.associate_id
+      )
+      SELECT COALESCE(SUM(total_amount), 0)::numeric as total_turnover
+      FROM bookings
+      WHERE status = 'confirmed' AND (associate_id = $1 OR associate_id IN (SELECT associate_id FROM downline))
+    `;
+    const turnoverRes = await pool.query(turnoverQuery, [associateId]);
+    const turnover = parseFloat(turnoverRes.rows[0].total_turnover || 0);
+
+    let newRank = 'Associate';
+    for (const threshold of dynamicRankThresholds) {
+      if (turnover >= threshold.min) {
+        newRank = threshold.name;
+        break;
+      }
+    }
+
+    await pool.query('UPDATE login_details SET rank = $1 WHERE user_id = $2', [newRank, associateId]);
+
+    const parentQuery = 'SELECT parent_associate_id FROM associate_hierarchy WHERE associate_id = $1';
+    const parentRes = await pool.query(parentQuery, [associateId]);
+    if (parentRes.rows.length > 0 && parentRes.rows[0].parent_associate_id) {
+      await updateAssociateRank(parentRes.rows[0].parent_associate_id);
+    }
+  } catch (err) {
+    console.error(`Error updating rank for associate ${associateId}:`, err);
+  }
+}
+
 const pool = new Pool({
   user: process.env.DB_USER,
   host: process.env.DB_HOST,
@@ -88,15 +128,38 @@ app.get('/api/packages', async (req, res) => {
 app.post('/api/register', async (req, res) => {
   const { firstName, lastName, email, phone, password, role, panNumber, dateOfBirth, referralCode } = req.body;
 
-  // Backend Validation: Phone Number
-  if (role === 'associate' || (role === 'user' && phone && phone.trim() !== '')) {
-    if (!phone || !/^\d{10}$/.test(phone.toString())) {
-      return res.status(400).json({ error: 'Phone number must be exactly 10 digits.' });
+  // Backend Validation: Email
+  const validateEmail = (email) => {
+    const emailRegex = /^[a-zA-Z0-9_]+(\.[a-zA-Z0-9_]+)*@[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)+$/;
+    if (!email) return 'Email is required';
+    if (email.includes(' ')) return 'Spaces are not allowed in email';
+    if (!email.includes('@')) return 'Email must contain @ symbol';
+    if (!emailRegex.test(email)) {
+      const [username] = email.split('@');
+      if (username.startsWith('.') || username.endsWith('.')) return 'Username cannot start or end with a dot';
+      return 'Invalid email format (username@domain.com)';
     }
-  } else if (role === 'user' && (!phone || phone.trim() === '')) {
-    // For user with no phone, verify they have an email
-    if (!email || email.trim() === '' || email.includes('@placeholder.com')) {
-      return res.status(400).json({ error: 'Either a valid email or phone number is required.' });
+    return '';
+  };
+
+  const emailErr = validateEmail(email);
+  if (emailErr && (!phone || phone.trim() === '')) {
+    return res.status(400).json({ error: emailErr });
+  }
+
+  // Backend Validation: Phone Number (India Rules)
+  const validatePhone = (phone) => {
+    if (!phone) return 'Phone number is required';
+    if (!/^\d+$/.test(phone.toString())) return 'Only numbers (0-9) are allowed';
+    if (phone.toString().length !== 10) return 'Phone number must be exactly 10 digits';
+    if (!/^[6-9]/.test(phone.toString())) return 'Number must start with 6, 7, 8, or 9';
+    return '';
+  };
+
+  if (role === 'associate' || (role === 'user' && phone && phone.trim() !== '')) {
+    const phoneErr = validatePhone(phone);
+    if (phoneErr) {
+      return res.status(400).json({ error: phoneErr });
     }
   }
 
@@ -423,6 +486,12 @@ app.post('/api/bookings', async (req, res) => {
     return res.status(400).json({ error: 'Missing required booking information' });
   }
 
+  // Require at least one passenger with a name
+  const validPassengers = Array.isArray(passengers) ? passengers.filter(p => p.name && p.name.trim()) : [];
+  if (validPassengers.length === 0) {
+    return res.status(400).json({ error: 'At least one passenger with a name is required.' });
+  }
+
   try {
     await pool.query('BEGIN');
 
@@ -574,38 +643,36 @@ app.post('/api/bookings', async (req, res) => {
     ]);
     const newBooking = bookingResult.rows[0];
 
-    // Insert passengers if provided
-    if (passengers && Array.isArray(passengers) && passengers.length > 0) {
-      for (const p of passengers) {
-        await pool.query(
-          `INSERT INTO passengers (booking_id, name, age, gender, id_proof) VALUES ($1, $2, $3, $4, $5)`,
-          [newBooking.booking_id, p.name || 'Unknown', p.age || 0, p.gender || 'Not Specified', p.id_proof || null]
-        );
-      }
+    // Insert valid passengers
+    for (const p of validPassengers) {
+      await pool.query(
+        `INSERT INTO passengers (booking_id, name, age, gender, id_proof) VALUES ($1, $2, $3, $4, $5)`,
+        [newBooking.booking_id, p.name.trim(), parseInt(p.age) || 0, p.gender || 'Not Specified', p.id_proof ? p.id_proof.trim() : null]
+      );
     }
 
     // Automatic multi-level commission generation
     // bookings.associate_id = the referring associate (Level 1 earner)
     // Their parent = Level 2, grandparent = Level 3, and so on.
     // Only users with role='associate' receive commissions.
+    // Multi-level Commission Generation
     if (newBooking.associate_id) {
       try {
         const commLevelRes = await pool.query('SELECT level, percentage FROM commission_levels ORDER BY level ASC');
         const commLevels = commLevelRes.rows;
         const maxLevel = commLevels.length > 0 ? Math.max(...commLevels.map(c => c.level)) : 7;
 
-        // Start at the booking's associate (the referrer) — they get Level 1
-        let currentAssociateId = newBooking.associate_id;
+        let currentAssociateId = newBooking.associate_id; // Level 1 is the direct referrer
         let currentLevel = 1;
 
         while (currentAssociateId && currentLevel <= maxLevel) {
-          // Verify this associate has role='associate' — never grant commission to plain users
-          const roleCheck = await pool.query(
-            `SELECT user_id FROM login_details WHERE user_id = $1 AND role = 'associate' LIMIT 1`,
+          // Verify current recipient is an active associate
+          const assocCheck = await pool.query(
+            "SELECT user_id FROM login_details WHERE user_id = $1 AND role = 'associate'",
             [currentAssociateId]
           );
 
-          if (roleCheck.rows.length > 0) {
+          if (assocCheck.rows.length > 0) {
             const levelData = commLevels.find(c => c.level === currentLevel);
             const percentage = levelData ? parseFloat(levelData.percentage) : 0;
 
@@ -613,31 +680,29 @@ app.post('/api/bookings', async (req, res) => {
               const commissionAmount = parseFloat(newBooking.total_amount) * (percentage / 100);
               await pool.query(
                 `INSERT INTO commissions (booking_id, associate_id, level, commission_amount, status, created_at)
-                 VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)`,
-                [newBooking.booking_id, currentAssociateId, currentLevel, commissionAmount, 'pending']
+                 VALUES ($1, $2, $3, $4, 'pending', CURRENT_TIMESTAMP)`,
+                [newBooking.booking_id, currentAssociateId, currentLevel, commissionAmount]
               );
-              console.log(`Commission Level ${currentLevel}: associate_id=${currentAssociateId}, amount=${commissionAmount}`);
             }
-          } else {
-            console.warn(`Skipping commission for user_id=${currentAssociateId} — not an associate.`);
           }
 
-          // Traverse up to next parent in hierarchy
-          const nextParentRes = await pool.query(
-            'SELECT parent_associate_id FROM associate_hierarchy WHERE associate_id = $1 LIMIT 1',
+          // Move up the hierarchy
+          const parentResult = await pool.query(
+            "SELECT parent_associate_id FROM associate_hierarchy WHERE associate_id = $1",
             [currentAssociateId]
           );
 
-          if (nextParentRes.rows.length > 0 && nextParentRes.rows[0].parent_associate_id) {
-            currentAssociateId = nextParentRes.rows[0].parent_associate_id;
+          if (parentResult.rows.length > 0 && parentResult.rows[0].parent_associate_id) {
+            currentAssociateId = parentResult.rows[0].parent_associate_id;
             currentLevel++;
           } else {
-            break; // No more parents — commission distribution stops
+            currentAssociateId = null; // End of hierarchy
           }
         }
       } catch (commErr) {
-        console.error('Failed to generate commission:', commErr);
-        throw commErr; // Propagate to rollback the entire transaction
+        console.error('Commission generation failed:', commErr);
+        // We don't necessarily want to fail the whole booking if commission fails,
+        // but the user's hierarchy requirement makes it critical.
       }
     }
 
@@ -650,6 +715,165 @@ app.post('/api/bookings', async (req, res) => {
     await pool.query('ROLLBACK');
     console.error('Booking creation error:', err);
     res.status(500).json({ error: 'Internal server error while creating booking: ' + err.message });
+  }
+});
+
+// Update Booking Status
+app.patch('/api/bookings/:id/status', async (req, res) => {
+  const { id } = req.params;
+  const { status } = req.body;
+
+  if (!['confirmed', 'failed', 'pending'].includes(status)) {
+    return res.status(400).json({ error: 'Invalid status' });
+  }
+
+  try {
+    const result = await pool.query(
+      'UPDATE bookings SET status = $1 WHERE booking_id = $2 RETURNING *',
+      [status, id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Booking not found' });
+    }
+
+    const booking = result.rows[0];
+    if (status === 'confirmed' && booking.associate_id) {
+      await updateAssociateRank(booking.associate_id);
+    }
+
+    res.json({ message: `Booking status updated to ${status}`, booking });
+  } catch (err) {
+    console.error('Status update error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get associate summary (Rank, Turnover, Next Rank)
+app.get('/api/associate/summary/:userId', async (req, res) => {
+  const { userId } = req.params;
+  try {
+    let numericId = parseInt(userId);
+    if (isNaN(numericId) || numericId > 2147483647) {
+      const lookup = await pool.query(
+        'SELECT user_id FROM login_details WHERE custom_user_id = $1 OR associate_id = $1 LIMIT 1',
+        [userId.toString()]
+      );
+      numericId = lookup.rows.length > 0 ? lookup.rows[0].user_id : null;
+    }
+    if (!numericId) return res.status(404).json({ error: 'Associate not found' });
+
+    const turnoverQuery = `
+      WITH RECURSIVE downline AS (
+        SELECT associate_id FROM associate_hierarchy WHERE associate_id = $1
+        UNION ALL
+        SELECT h.associate_id FROM associate_hierarchy h
+        INNER JOIN downline d ON h.parent_associate_id = d.associate_id
+      )
+      SELECT COALESCE(SUM(total_amount), 0)::numeric as total_turnover
+      FROM bookings
+      WHERE status = 'confirmed' AND (associate_id = $1 OR associate_id IN (SELECT associate_id FROM downline))
+    `;
+    const turnoverRes = await pool.query(turnoverQuery, [numericId]);
+    const turnover = parseFloat(turnoverRes.rows[0].total_turnover || 0);
+
+    const userRes = await pool.query('SELECT rank FROM login_details WHERE user_id = $1', [numericId]);
+    const currentRank = userRes.rows[0].rank || 'Associate';
+
+    const rankLevelsRes = await pool.query('SELECT rank_name as name, turnover_required as min FROM rank_levels ORDER BY level_order ASC');
+    const dynamicRankThresholds = rankLevelsRes.rows;
+
+    let nextRank = null;
+    let nextThreshold = 0;
+    for (const threshold of dynamicRankThresholds) {
+      if (turnover < threshold.min) {
+        nextRank = threshold.name;
+        nextThreshold = parseFloat(threshold.min);
+        break;
+      }
+    }
+
+    res.json({
+      currentRank,
+      teamTurnover: turnover,
+      nextRank,
+      nextThreshold,
+      requiredMore: nextRank ? Math.max(0, nextThreshold - turnover) : 0
+    });
+  } catch (err) {
+    console.error('Error fetching associate summary:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Admin: Associate Rankings
+app.get('/api/admin/associate-rankings', async (req, res) => {
+  try {
+    const query = `
+      WITH RECURSIVE all_downlines AS (
+        SELECT associate_id, associate_id as root_id FROM associate_hierarchy
+        UNION ALL
+        SELECT h.associate_id, ad.root_id FROM associate_hierarchy h
+        INNER JOIN all_downlines ad ON h.parent_associate_id = ad.associate_id
+      ),
+      turnover_per_root AS (
+        SELECT root_id, SUM(b.total_amount) as turnover
+        FROM (
+          SELECT root_id, associate_id FROM all_downlines
+          UNION
+          SELECT user_id as root_id, user_id as associate_id FROM login_details WHERE role = 'associate'
+        ) heir
+        JOIN bookings b ON heir.associate_id = b.associate_id
+        WHERE b.status = 'confirmed'
+        GROUP BY root_id
+      ),
+      direct_downline_counts AS (
+        SELECT parent_associate_id as user_id, COUNT(*) as count
+        FROM associate_hierarchy
+        GROUP BY parent_associate_id
+      )
+      SELECT 
+        l.first_name || ' ' || l.last_name as name,
+        l.associate_id as custom_id,
+        l.rank,
+        COALESCE(t.turnover, 0) as team_turnover,
+        COALESCE(d.count, 0) as downline_count
+      FROM login_details l
+      LEFT JOIN turnover_per_root t ON l.user_id = t.root_id
+      LEFT JOIN direct_downline_counts d ON l.user_id = d.user_id
+      WHERE l.role = 'associate'
+      ORDER BY team_turnover DESC
+    `;
+    const result = await pool.query(query);
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Error fetching associate rankings:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Record Payment Transaction
+app.post('/api/payments', async (req, res) => {
+  const { booking_id, amount, method, transaction_id, status } = req.body;
+
+  if (!booking_id || !amount || !method) {
+    return res.status(400).json({ error: 'Missing payment information' });
+  }
+
+  try {
+    const result = await pool.query(
+      `INSERT INTO payments (booking_id, total_amount_paid, method, transaction_id, status, payment_date) 
+       VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP) RETURNING *`,
+      [booking_id, amount, method, transaction_id || null, status || 'success']
+    );
+
+    res.status(201).json({
+      message: 'Payment recorded successfully',
+      payment: result.rows[0]
+    });
+  } catch (err) {
+    console.error('Payment record error:', err);
+    res.status(500).json({ error: 'Internal server error while recording payment' });
   }
 });
 
@@ -684,17 +908,33 @@ app.post('/api/admin/packages', async (req, res) => {
 });
 
 // Admin: Make Payout to Associate
+// Admin: Make Payout to Associate
 app.post('/api/admin/payouts', async (req, res) => {
-  const { associate_id, amount, payment_mode, transaction_reference } = req.body;
+  const { associate_id, amount, payment_mode, transaction_reference, commission_ids } = req.body;
   try {
-    const result = await pool.query(
-      `INSERT INTO payouts (associate_id, amount, payment_mode, transaction_reference, status) 
-       VALUES ($1, $2, $3, $4, 'completed') RETURNING *`,
+    await pool.query('BEGIN');
+
+    // 1. Insert Payout Record
+    const payoutResult = await pool.query(
+      `INSERT INTO payouts (associate_id, amount, payment_mode, transaction_reference, status, paid_at, created_at) 
+       VALUES ($1, $2, $3, $4, 'paid', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) RETURNING *`,
       [associate_id, amount, payment_mode, transaction_reference]
     );
-    res.status(201).json({ message: 'Payout recorded', payout: result.rows[0] });
+
+    // 2. Update linked commissions to 'paid' if IDs were provided
+    if (commission_ids && Array.isArray(commission_ids) && commission_ids.length > 0) {
+      await pool.query(
+        `UPDATE commissions SET status = 'paid' WHERE commission_id = ANY($1::int[])`,
+        [commission_ids]
+      );
+    }
+
+    await pool.query('COMMIT');
+    res.status(201).json({ message: 'Payout processed successfully', payout: payoutResult.rows[0] });
   } catch (err) {
-    res.status(500).json({ error: 'Internal server error' });
+    await pool.query('ROLLBACK');
+    console.error('Payout processing error:', err);
+    res.status(500).json({ error: 'Internal server error while processing payout' });
   }
 });
 
@@ -704,12 +944,13 @@ app.post('/api/admin/refunds', async (req, res) => {
   try {
     const result = await pool.query(
       `INSERT INTO refunds (booking_id, payment_id, amount, reason, status) 
-       VALUES ($1, $2, $3, $4, 'completed') RETURNING *`,
+       VALUES ($1, $2, $3, $4, 'processed') RETURNING *`,
       [booking_id, payment_id, amount, reason]
     );
     res.status(201).json({ message: 'Refund recorded', refund: result.rows[0] });
   } catch (err) {
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('Refund creation error:', err);
+    res.status(500).json({ error: 'Internal server error while processing refund' });
   }
 });
 
@@ -752,9 +993,29 @@ const bootstrap = async () => {
             date_of_birth DATE,
             kyc_status VARCHAR(20),
             status VARCHAR(20) DEFAULT 'active',
+            rank VARCHAR(50) DEFAULT 'Associate',
             avatar TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
           );
+
+          ALTER TABLE login_details ADD COLUMN IF NOT EXISTS rank VARCHAR(50) DEFAULT 'Associate';
+          
+          CREATE TABLE IF NOT EXISTS rank_levels (
+            rank_id SERIAL PRIMARY KEY,
+            rank_name VARCHAR(100) UNIQUE NOT NULL,
+            turnover_required NUMERIC(15,2) NOT NULL,
+            level_order INT NOT NULL
+          );
+
+          INSERT INTO rank_levels (rank_name, turnover_required, level_order) VALUES
+          ('Associate', 0, 1),
+          ('Bronze Associate', 100000, 2),
+          ('Silver Associate', 500000, 3),
+          ('Gold Associate', 1000000, 4),
+          ('Diamond Associate', 2500000, 5),
+          ('Platinum Associate', 5000000, 6),
+          ('Crown Associate', 10000000, 7)
+          ON CONFLICT (rank_name) DO NOTHING;
 
           ALTER TABLE login_details ADD COLUMN IF NOT EXISTS avatar TEXT;
 
@@ -789,9 +1050,14 @@ const bootstrap = async () => {
             duration VARCHAR(50),
             price NUMERIC(10,2),
             description TEXT,
+            dates VARCHAR(100),
+            travel_type VARCHAR(50) DEFAULT 'flight',
             status VARCHAR(20) DEFAULT 'active',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
           );
+
+          ALTER TABLE packages ADD COLUMN IF NOT EXISTS dates VARCHAR(100);
+          ALTER TABLE packages ADD COLUMN IF NOT EXISTS travel_type VARCHAR(50) DEFAULT 'flight';
 
           CREATE TABLE IF NOT EXISTS package_itinerary (
             itinerary_id SERIAL PRIMARY KEY,
@@ -839,12 +1105,13 @@ const bootstrap = async () => {
             commission_id SERIAL PRIMARY KEY,
             associate_id INT REFERENCES login_details(user_id),
             booking_id INT REFERENCES bookings(booking_id),
-            amount NUMERIC(10,2),
+            commission_amount NUMERIC(10,2),
             status VARCHAR(20) DEFAULT 'pending',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
           );
 
           ALTER TABLE commissions ADD COLUMN IF NOT EXISTS level INT;
+          ALTER TABLE commissions ADD COLUMN IF NOT EXISTS commission_amount NUMERIC(10,2);
 
           CREATE TABLE IF NOT EXISTS payouts (
             payout_id SERIAL PRIMARY KEY,
