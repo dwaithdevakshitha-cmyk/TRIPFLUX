@@ -1023,9 +1023,30 @@ app.post('/api/admin/generate-banner-content', async (req, res) => {
     }
 
     // Phase 2: Real AI logic with Fallback
-    let points = [];
     const targetLang = targetLanguage || 'English';
     const apiKey = process.env.GEMINI_API_KEY;
+
+    let bannerData = {
+      title: pkg.name,
+      destination: pkg.destination,
+      duration: pkg.duration,
+      price: pkg.price,
+      points: [],
+      brandName: "వాసుదేవ టూర్స్",
+      brandSub: "డో.నెం.127, ఆర్.టి.సి. బస్టాండ్ ఎదురుగా, రాజంపేట.",
+      highTitle: "దర్శించవలసిన పుణ్యక్షేత్రాలు",
+      reservationText: "8000/- రూ. చెల్లించి సీటు రిజర్వ్ చేసుకోగలరు.",
+      rules: [
+        "మీ వెంట దుస్తులు తక్కువ లగేజీ, కావలిసిన మందులు తీసుకురావలెను.",
+        "ఆటో బాడుగలు, దేవాలయం దర్శన టికెట్లు యాత్రికులు భరించవలెను.",
+        "డిస్పోజల్ ప్లేట్స్ మరియు రోజుకు 3 వాటర్ లీటర్ బాటిల్స్ ఇవ్వబడును.",
+        "యాత్ర విరమించిన వారికి అడ్వాన్స్ బుకింగ్ వాపస్ ఇవ్వబడదు."
+      ],
+      disclaimer: "ఎటువంటి కారణం లేకుండా బ్రోచర్ లో ప్రచారం చేయబడిన ఏదైనా పర్యటనలను మార్చడానికి, సవరించడానికి, వాయిదా వేయడానికి లేదా రద్దు చేయడానికి వాసుదేవ టూర్స్ వారికి సంపూర్ణ హక్కును కలిగివుంది.",
+      featuresLabel: "మా ప్రత్యేకతలు",
+      features: "బస్ 2x2 ఏసి పుష్ బ్యాక్ ☸ రుచికరమైన భోజనం (నెల్లూరు వారిచే)",
+      sigName: "మీ... చమర్తి రెడ్డియ్య రాజు"
+    };
 
     if (apiKey) {
       try {
@@ -1033,59 +1054,43 @@ app.post('/api/admin/generate-banner-content', async (req, res) => {
         const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
         const prompt = `
-          You are a professional travel marketing expert. 
-          Summarize this tour package: "${pkg.name}" for destination "${pkg.destination}".
-          Itinerary summary: ${JSON.stringify(itinerary.slice(0, 3))}
-          Output exactly 5 catchy, short marketing bullet points for a visual banner.
+          You are a travel marketing expert for "Vasudeva Tours". 
+          Generate a complete banner content JSON for this package: "${pkg.name}" for "${pkg.destination}".
+          Itinerary: ${JSON.stringify(itinerary.slice(0, 5))}
+          
           Target Language: ${targetLang}
-          Output only the bullet points, one per line, no numbers.
+          
+          Return a JSON object with EXACTLY these keys:
+          - title: A catchy short title for the tour in ${targetLang}
+          - tripDetails: A 1-2 line summary of the trip details (duration, transport, etc) in ${targetLang}
+          - points: Array of 9 catchy location names or highlights from the itinerary in ${targetLang}
+          - brandName: The brand "Vasudeva Tours" translated to ${targetLang}
+          - brandSub: The address "Door No.127, Opp. RTC Bus Stand, Rajampeta" translated to ${targetLang}
+          - highTitle: Header text for highlights section (e.g. "Places to Visit") in ${targetLang}
+          - reservationText: Seat reservation text (Rs 8000/-) in ${targetLang}
+          - rules: Array of 4 travel rules in ${targetLang}
+          - disclaimer: A disclaimer about tour cancellations/changes in ${targetLang}
+          - featuresLabel: Label for specialties (e.g. "Our Specialities") in ${targetLang}
+          - features: Description of specialties (Food, Bus type) in ${targetLang}
+          - sigName: A formal signature "Your... Chamarti Reddayya Raju" in ${targetLang}
+          
+          IMPORTANT: Return ONLY valid JSON.
         `;
 
         const result = await model.generateContent(prompt);
         const responseText = result.response.text();
-        points = responseText.split('\n').filter(p => p.trim() !== '').slice(0, 5);
+        const cleaned = responseText.replace(/```json|```/g, '').trim();
+        const aiJson = JSON.parse(cleaned);
+        
+        bannerData = { ...bannerData, ...aiJson };
       } catch (aiErr) {
-        console.warn('AI Generation failed, using fallback:', aiErr.message);
+        console.warn('AI Generation failed, using base data:', aiErr.message);
       }
     }
 
-    if (points.length === 0) {
-      const summaries = {
-        'Telugu': [
-          'అద్భుతమైన పర్యటన అనుభవం',
-          'సురక్షితమైన మరియు సౌకర్యవంతమైన ప్రయాణం',
-          'రుచికరమైన ఆహారం మరియు వసతి',
-          'ప్రధాన దర్శనీయ ప్రదేశాల సందర్శన',
-          'అనుభవజ్ఞులైన గైడ్ సహాయం'
-        ],
-        'Hindi': [
-          'शानदार पर्यटन अनुभव',
-          'सुरक्षित और आरामदायक यात्रा',
-          'स्वादिष्ट भोजन और आवास',
-          'मुख्य दर्शनीय स्थलों की यात्रा',
-          'अनुभवी गाइड की सहायता'
-        ],
-        'English': [
-          'Amazing Tour Experience',
-          'Safe and Comfortable Journey',
-          'Delicious Food & Accommodation',
-          'Visit to Major Attractions',
-          'Experienced Guide Assistance'
-        ]
-      };
-      points = summaries[targetLang] || summaries['English'];
-    }
-
-    // Metadata extraction for icons
-    const transportType = pkg.travel_type || 'Bus'; // Default to Bus like the user examples
-
     res.json({
-      title: pkg.name,
-      destination: pkg.destination,
-      duration: pkg.duration,
+      ...bannerData,
       price: pkg.price,
-      points: points,
-      transportType: transportType,
       language: targetLang,
       package_id: packageId
     });
