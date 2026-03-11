@@ -1,8 +1,8 @@
 
 import { TourPackage } from "../types";
 
-const BASE_URL = "http://127.0.0.1:3001";
-const BACKEND_SQL_URL = `${BASE_URL}/api/sql`;
+const BASE_URL = "";
+const BACKEND_SQL_URL = "/api/sql";
 
 async function safeJson(response: Response) {
   const contentType = response.headers.get("content-type");
@@ -375,48 +375,13 @@ export const dbService = {
 
   async getPackages(): Promise<TourPackage[]> {
     try {
-      const query = `
-        SELECT 
-          package_id as db_id, 
-          name as title, 
-          category, 
-          destination, 
-          duration, 
-          price, 
-          description, 
-          dates, 
-          price_basis, 
-          price_advance, 
-          highlights, 
-          image, 
-          transport_type, 
-          contact_phone, 
-          contact_email, 
-          features, 
-          terms, 
-          media_files, 
-          itinerary, 
-          custom_id,
-          location,
-          track
-        FROM packages 
-        WHERE status = 'active'
-        ORDER BY package_id DESC
-      `;
-      const rows = await executeSql(query);
-
-      return rows.map((row: any) => ({
-        ...row,
-        id: row.custom_id || row.db_id.toString(),
-        price: typeof row.price === 'number' ? `₹${row.price.toLocaleString('en-IN')}` : row.price,
-        highlights: row.highlights || [],
-        features: row.features || [],
-        terms: row.terms || [],
-        mediaFiles: row.media_files || [],
-        itinerary: row.itinerary || []
-      }));
+      const response = await fetch(`${BASE_URL}/api/packages`);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch packages: ${response.statusText}`);
+      }
+      return await response.json();
     } catch (err) {
-      console.warn("SQL fetch failed, returning empty list", err);
+      console.error("Fetch packages failed, returning empty list", err);
       return [];
     }
   }

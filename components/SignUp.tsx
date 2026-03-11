@@ -95,7 +95,7 @@ const SignUp: React.FC<SignUpProps> = ({ onBack, onSuccess }) => {
             }
 
             try {
-                const res = await fetch('http://localhost:3001/api/register', {
+                const res = await fetch('/api/register', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -131,23 +131,36 @@ const SignUp: React.FC<SignUpProps> = ({ onBack, onSuccess }) => {
             return;
         }
 
-        const userData = {
-            emailOrPhone: formData.emailOrPhone,
-            password: formData.password,
-            timestamp: new Date().toISOString()
-        };
+        if (isSignIn) {
+            try {
+                const res = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: formData.emailOrPhone,
+                        password: formData.password
+                    })
+                });
 
-        // Encrypt and store customer data
-        storageService.saveCustomer(userData);
-
-        const mockUser = {
-            id: Date.now().toString(),
-            name: formData.emailOrPhone.split('@')[0],
-            email: formData.emailOrPhone.includes('@') ? formData.emailOrPhone : formData.emailOrPhone + '@tripflux.ai',
-            avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=100&auto=format&fit=crop'
-        };
-
-        onSuccess(mockUser);
+                if (res.ok) {
+                    const data = await res.json();
+                    onSuccess({
+                        id: data.user_id?.toString() || '',
+                        name: data.first_name || data.email?.split('@')[0].toUpperCase(),
+                        email: data.email,
+                        role: data.role,
+                        promoCode: data.promo_code,
+                        avatar: data.avatar || `https://ui-avatars.com/api/?name=${data.first_name}&background=6366f1&color=fff`
+                    });
+                } else {
+                    const errData = await res.json();
+                    setError(errData.error || 'Invalid email or password');
+                }
+            } catch (err) {
+                console.error("Login Error:", err);
+                setError('Connection error. Please try again.');
+            }
+        }
     };
 
     return (

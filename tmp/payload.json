@@ -1,0 +1,8 @@
+{
+  "firstName": "Diagnostic",
+  "lastName": "Test",
+  "email": "diag_test_1@tripflux.tour",
+  "phone": "9988776655",
+  "password": "TestPass123",
+  "role": "user"
+}

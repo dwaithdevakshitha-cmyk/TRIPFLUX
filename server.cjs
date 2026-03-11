@@ -1,10 +1,15 @@
 const express = require('express');
 const { Pool } = require('pg');
+const { GoogleGenerativeAI } = require("@google/genai");
 const cors = require('cors');
+const logger = require('./services/logger.cjs');
 require('dotenv').config();
 
 const app = express();
 const port = process.env.PORT || 3001;
+
+// Use custom logging middleware
+app.use(logger.requestLogger);
 
 async function updateAssociateRank(associateId) {
   if (!associateId) return;
@@ -46,13 +51,24 @@ async function updateAssociateRank(associateId) {
   }
 }
 
-const pool = new Pool({
+const fs = require('fs');
+
+const poolConfig = {
   user: process.env.DB_USER,
   host: process.env.DB_HOST,
   database: process.env.DB_NAME,
   password: process.env.DB_PASSWORD,
   port: process.env.DB_PORT,
-});
+};
+
+if (process.env.NODE_ENV === 'production') {
+  poolConfig.ssl = {
+    rejectUnauthorized: true,
+    ca: fs.readFileSync('/certs/global-bundle.pem').toString(),
+  };
+}
+
+const pool = new Pool(poolConfig);
 
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
@@ -107,14 +123,27 @@ app.get('/api/packages', async (req, res) => {
 
     // Format JSON fields and price back to strings if necessary
     const formatted = result.rows.map(row => ({
-      ...row,
       id: row.custom_id || row.id.toString(),
-      price: `₹${parseFloat(row.price).toLocaleString('en-IN')}`,
+      title: row.title,
+      category: row.category,
+      destination: row.destination,
+      duration: row.duration,
+      price: `₹${parseFloat(row.price || 0).toLocaleString('en-IN')}`,
+      description: row.description,
+      dates: row.dates,
+      priceBasis: row.price_basis,
+      priceAdvance: row.price_advance,
       highlights: row.highlights || [],
+      image: row.image,
+      transportType: row.transport_type,
+      contactPhone: row.contact_phone,
+      contactEmail: row.contact_email,
       features: row.features || [],
       terms: row.terms || [],
-      media_files: row.media_files || [],
-      itinerary: row.itinerary || []
+      mediaFiles: row.media_files || [],
+      itinerary: row.itinerary || [],
+      location: row.location,
+      track: row.track
     }));
 
     res.json(formatted);
@@ -126,6 +155,7 @@ app.get('/api/packages', async (req, res) => {
 
 // Registration endpoint
 app.post('/api/register', async (req, res) => {
+  console.log('REGISTRATION REQUEST BODY:', req.body);
   const { firstName, lastName, email, phone, password, role, panNumber, dateOfBirth, referralCode } = req.body;
 
   // Backend Validation: Email
@@ -954,7 +984,118 @@ app.post('/api/admin/refunds', async (req, res) => {
   }
 });
 
-// Bootstrap table
+// AI Banner Content Generation (Internal Mock for Phase 1)
+app.post('/api/admin/generate-banner-content', async (req, res) => {
+  const { packageId, targetLanguage } = req.body;
+
+  if (!packageId) {
+    return res.status(400).json({ error: 'Package ID is required' });
+  }
+
+  try {
+    // 1. Fetch package details - Try packages (integer ID) then signature_tours (string ID)
+    let pkg;
+    let itinerary = [];
+
+    // Check if packageId is purely numeric
+    const isNumeric = /^\d+$/.test(packageId.toString());
+
+    if (isNumeric) {
+      const pkgResult = await pool.query('SELECT * FROM packages WHERE package_id = $1', [parseInt(packageId)]);
+      pkg = pkgResult.rows[0];
+      if (pkg) {
+        const itinResult = await pool.query('SELECT * FROM package_itinerary WHERE package_id = $1 ORDER BY day_number ASC', [pkg.package_id]);
+        itinerary = itinResult.rows;
+      }
+    }
+
+    if (!pkg) {
+      const sigResult = await pool.query('SELECT * FROM signature_tours WHERE id = $1', [packageId]);
+      pkg = sigResult.rows[0];
+      if (pkg) {
+        pkg.name = pkg.title; // Normalize name
+        itinerary = pkg.itinerary || [];
+      }
+    }
+
+    if (!pkg) {
+      return res.status(404).json({ error: 'Package not found in any table' });
+    }
+
+    // Phase 2: Real AI logic with Fallback
+    let points = [];
+    const targetLang = targetLanguage || 'English';
+    const apiKey = process.env.GEMINI_API_KEY;
+
+    if (apiKey) {
+      try {
+        const genAI = new GoogleGenerativeAI(apiKey);
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+        const prompt = `
+          You are a professional travel marketing expert. 
+          Summarize this tour package: "${pkg.name}" for destination "${pkg.destination}".
+          Itinerary summary: ${JSON.stringify(itinerary.slice(0, 3))}
+          Output exactly 5 catchy, short marketing bullet points for a visual banner.
+          Target Language: ${targetLang}
+          Output only the bullet points, one per line, no numbers.
+        `;
+
+        const result = await model.generateContent(prompt);
+        const responseText = result.response.text();
+        points = responseText.split('\n').filter(p => p.trim() !== '').slice(0, 5);
+      } catch (aiErr) {
+        console.warn('AI Generation failed, using fallback:', aiErr.message);
+      }
+    }
+
+    if (points.length === 0) {
+      const summaries = {
+        'Telugu': [
+          'అద్భుతమైన పర్యటన అనుభవం',
+          'సురక్షితమైన మరియు సౌకర్యవంతమైన ప్రయాణం',
+          'రుచికరమైన ఆహారం మరియు వసతి',
+          'ప్రధాన దర్శనీయ ప్రదేశాల సందర్శన',
+          'అనుభవజ్ఞులైన గైడ్ సహాయం'
+        ],
+        'Hindi': [
+          'शानदार पर्यटन अनुभव',
+          'सुरक्षित और आरामदायक यात्रा',
+          'स्वादिष्ट भोजन और आवास',
+          'मुख्य दर्शनीय स्थलों की यात्रा',
+          'अनुभवी गाइड की सहायता'
+        ],
+        'English': [
+          'Amazing Tour Experience',
+          'Safe and Comfortable Journey',
+          'Delicious Food & Accommodation',
+          'Visit to Major Attractions',
+          'Experienced Guide Assistance'
+        ]
+      };
+      points = summaries[targetLang] || summaries['English'];
+    }
+
+    // Metadata extraction for icons
+    const transportType = pkg.travel_type || 'Bus'; // Default to Bus like the user examples
+
+    res.json({
+      title: pkg.name,
+      destination: pkg.destination,
+      duration: pkg.duration,
+      price: pkg.price,
+      points: points,
+      transportType: transportType,
+      language: targetLang,
+      package_id: packageId
+    });
+
+  } catch (err) {
+    console.error('Error generating banner content:', err);
+    res.status(500).json({ error: 'Internal server error while generating banner content' });
+  }
+});
+
 const bootstrap = async () => {
   try {
     await pool.query(`

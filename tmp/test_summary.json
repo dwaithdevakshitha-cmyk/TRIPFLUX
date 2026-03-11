@@ -1,0 +1,45 @@
+[
+  {
+    "name": "User Registration (Positive)",
+    "success": true
+  },
+  {
+    "name": "Associate Registration (Valid PAN/DOB)",
+    "success": true
+  },
+  {
+    "name": "Negative: Phone number < 10 digits",
+    "success": true
+  },
+  {
+    "name": "Login (Correct Credentials)",
+    "success": true
+  },
+  {
+    "name": "Negative: Wrong Password",
+    "success": true
+  },
+  {
+    "name": "Package Listing (NotEmpty)",
+    "success": true
+  },
+  {
+    "name": "MLM Commission (7 Levels Generated)",
+    "success": false
+  },
+  {
+    "name": "Commission L1 Amount correct (10%)"
+  },
+  {
+    "name": "Rank Promotion (Bronze at 1L)",
+    "success": true
+  },
+  {
+    "name": "Security: SQL Injection attempt (Login)",
+    "success": true
+  },
+  {
+    "name": "Security: XSS Input Acceptance",
+    "success": true
+  }
+]

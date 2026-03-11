@@ -112,7 +112,7 @@ const SignupPage: React.FC<SignupPageProps> = ({ onBack, onAuthSuccess }) => {
                 firstName: firstName || (loginType === 'USER' ? 'User' : ''),
                 lastName: lastName || '',
                 email: userEmail,
-                phone: userPhone.startsWith('+') ? userPhone : `+91${userPhone}`,
+                phone: userPhone,
                 password,
                 role,
                 dateOfBirth: loginType === 'ASSOCIATE' ? dob : null,
@@ -126,7 +126,7 @@ const SignupPage: React.FC<SignupPageProps> = ({ onBack, onAuthSuccess }) => {
             let errorMessage = '';
 
             try {
-                const response = await fetch(`http://127.0.0.1:3001${endpoint}`, {
+                const response = await fetch(endpoint, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload),
@@ -151,7 +151,7 @@ const SignupPage: React.FC<SignupPageProps> = ({ onBack, onAuthSuccess }) => {
                 // Ensure we always have a valid numeric DB user_id
                 if (!data.user_id && data.email) {
                     try {
-                        const lookup = await fetch(`http://127.0.0.1:3001/api/users/by-email/${encodeURIComponent(data.email)}`);
+                        const lookup = await fetch(`/api/users/by-email/${encodeURIComponent(data.email)}`);
                         if (lookup.ok) {
                             const dbUser = await lookup.json();
                             if (dbUser.user_id) authUser.id = dbUser.user_id.toString();
@@ -159,57 +159,8 @@ const SignupPage: React.FC<SignupPageProps> = ({ onBack, onAuthSuccess }) => {
                     } catch (_) { /* ignore */ }
                 }
             } catch (err: any) {
-                console.warn("Backend unavailable or returned error, falling back to local storage:", err);
-
-                // FALLBACK: Local Storage / XML storage service
-                if (isRegistering) {
-                    let generatedPromoCode = '';
-                    if (role === 'associate' && dob) {
-                        const dobParts = dob.split('-'); // YYYY-MM-DD
-                        if (dobParts.length === 3) {
-                            generatedPromoCode = `${dobParts[2]}${dobParts[1]}${dobParts[0]}`; // DDMMYYYY
-                        } else {
-                            generatedPromoCode = `${dob.replace(/[^0-9]/g, '')}`;
-                        }
-                    }
-
-                    const userData = {
-                        emailOrPhone: userEmail,
-                        password: password,
-                        firstName: firstName || (loginType === 'USER' ? 'User' : ''),
-                        lastName: lastName || '',
-                        role,
-                        promoCode: generatedPromoCode,
-                        referralCode: referralCode || '',
-                        timestamp: new Date().toISOString()
-                    };
-                    storageService.saveCustomer(userData);
-
-                    authUser = {
-                        id: Date.now().toString(),
-                        name: firstName || userEmail.split('@')[0].toUpperCase(),
-                        email: userEmail,
-                        avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=100&auto=format&fit=crop',
-                        role,
-                        promoCode: generatedPromoCode || undefined
-                    };
-                } else {
-                    const customers = storageService.getCustomers();
-                    const user = customers.find((c: any) => c.emailOrPhone === userEmail && c.password === password);
-
-                    if (user) {
-                        authUser = {
-                            id: user.id || Date.now().toString(),
-                            name: (user.firstName && user.lastName) ? `${user.firstName} ${user.lastName}` : (user.firstName || user.name || userEmail.split('@')[0].toUpperCase()),
-                            email: user.emailOrPhone,
-                            avatar: user.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=100&auto=format&fit=crop',
-                            role: user.role,
-                            promoCode: user.promoCode
-                        };
-                    } else {
-                        errorMessage = 'Invalid email or password';
-                    }
-                }
+                console.error("Authentication failed:", err);
+                errorMessage = err.message || "Connection refused. Please check your internet or try again later.";
             }
 
             if (authUser) {

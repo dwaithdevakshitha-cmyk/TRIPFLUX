@@ -9,7 +9,7 @@ interface BannerBuilderProps {
 
 const BannerBuilder: React.FC<BannerBuilderProps> = ({ packageId }) => {
     const [packages, setPackages] = useState<any[]>([]);
-    const [selectedPackageId, setSelectedPackageId] = useState<number | null>(packageId || null);
+    const [selectedPackageId, setSelectedPackageId] = useState<string | number | null>(packageId || null);
     const [targetLanguage, setTargetLanguage] = useState('Telugu');
     const [loading, setLoading] = useState(false);
     const [format, setFormat] = useState<'Portrait' | 'Square' | 'Banner'>('Portrait');
@@ -65,8 +65,23 @@ const BannerBuilder: React.FC<BannerBuilderProps> = ({ packageId }) => {
 
     useEffect(() => {
         const fetchPackages = async () => {
-            const data = await dbService.getPackagesAdmin();
-            setPackages(data);
+            try {
+                const [adminPkgs, sigPkgs] = await Promise.all([
+                    dbService.getPackagesAdmin(),
+                    dbService.getSignatureTours()
+                ]);
+
+                // Normalize and combine
+                const combined = [
+                    ...adminPkgs.map((p: any) => ({ ...p, source: 'admin', displayId: p.package_id, displayName: p.name })),
+                    ...sigPkgs.map((p: any) => ({ ...p, source: 'signature', displayId: p.id, displayName: p.title }))
+                ];
+
+                setPackages(combined);
+                console.log(`[BannerBuilder] Loaded ${combined.length} packages`);
+            } catch (err) {
+                console.error("Failed to fetch packages for banner builder:", err);
+            }
         };
         fetchPackages();
     }, []);
@@ -118,7 +133,7 @@ const BannerBuilder: React.FC<BannerBuilderProps> = ({ packageId }) => {
                 quality: 0.98,
                 backgroundColor: '#ffffff',
                 width: dimForCapture.w,
-                height: dimForCapture.h,
+                height: bannerRef.current.scrollHeight, // Capture actual content height
                 style: {
                     transform: 'none',
                     margin: '0',
@@ -141,7 +156,7 @@ const BannerBuilder: React.FC<BannerBuilderProps> = ({ packageId }) => {
         switch (format) {
             case 'Square': return { w: 1200, h: 1200, scale: 0.5 };
             case 'Banner': return { w: 1280, h: 720, scale: 0.5 };
-            default: return { w: 1200, h: 2000, scale: 0.38 }; // Visible scaling for editor
+            default: return { w: 1200, h: 2800, scale: 0.32 }; // Taller for long posters
         }
     };
 
@@ -162,9 +177,21 @@ const BannerBuilder: React.FC<BannerBuilderProps> = ({ packageId }) => {
                         ))}
                     </div>
                     <div className="flex flex-col gap-3">
-                        <select className="p-2.5 bg-white text-black text-xs font-bold rounded-xl" value={selectedPackageId || ''} onChange={(e) => setSelectedPackageId(Number(e.target.value))}>
-                            <option value="">Choose Tour Source...</option>
-                            {packages.map(p => <option key={p.package_id} value={p.package_id}>{p.name}</option>)}
+                        <select
+                            className="p-2.5 bg-white text-black text-xs font-bold rounded-xl outline-none focus:ring-2 focus:ring-indigo-500"
+                            value={selectedPackageId || ''}
+                            onChange={(e) => setSelectedPackageId(e.target.value)}
+                        >
+                            <option value="">Choose Tour Package...</option>
+                            {packages.length > 0 ? (
+                                packages.map(p => (
+                                    <option key={`${p.source}-${p.displayId}`} value={p.displayId}>
+                                        {p.displayName} {p.source === 'signature' ? '(Signature)' : ''}
+                                    </option>
+                                ))
+                            ) : (
+                                <option disabled>No packages available</option>
+                            )}
                         </select>
                         <div className="flex gap-2">
                             <select className="flex-1 p-2.5 bg-white text-black text-xs font-bold rounded-xl" value={targetLanguage} onChange={(e) => setTargetLanguage(e.target.value)}>
@@ -271,7 +298,7 @@ const BannerBuilder: React.FC<BannerBuilderProps> = ({ packageId }) => {
                         <div
                             ref={bannerRef}
                             className="bg-white flex flex-col items-center relative"
-                            style={{ width: `${dim.w}px`, height: `${dim.h}px` }}
+                            style={{ width: `${dim.w}px`, minHeight: `${dim.h}px` }}
                         >
                             {/* Header */}
                             <div className="w-[1120px] h-[220px] bg-[#fb1d1d] mt-10 rounded-[110px] border-[12px] border-[#ffd700] flex flex-col items-center justify-center relative shadow-xl flex-shrink-0">
@@ -332,9 +359,6 @@ const BannerBuilder: React.FC<BannerBuilderProps> = ({ packageId }) => {
                             {/* Signature Footer */}
                             <div className="w-full bg-slate-50 border-t-[14px] border-indigo-950 p-12 flex items-center justify-between px-24 mt-auto flex-shrink-0">
                                 <div className="flex items-center gap-14">
-                                    <div className="w-56 h-56 rounded-[50px] border-[12px] border-indigo-950 overflow-hidden bg-white shadow-3xl">
-                                        <img src={adminPhoto} className="w-full h-full object-cover" alt="Admin" />
-                                    </div>
                                     <div className="flex flex-col">
                                         <span className="font-black text-indigo-950 opacity-40 italic tracking-wider mb-2" style={{ fontSize: `${sigSize}px` }}>{sigName}</span>
                                         <div className="flex items-center gap-8">

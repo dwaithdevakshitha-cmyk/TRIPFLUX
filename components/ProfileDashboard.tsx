@@ -39,7 +39,7 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({ user, onClose, onSi
         setExpandedBookingId(bookingId);
         if (!bookingPassengers[bookingId]) {
             try {
-                const res = await fetch(`http://localhost:3001/api/bookings/${bookingId}/passengers`);
+                const res = await fetch(`/api/bookings/${bookingId}/passengers`);
                 if (res.ok) {
                     const data = await res.json();
                     setBookingPassengers(prev => ({ ...prev, [bookingId]: data }));
@@ -59,7 +59,7 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({ user, onClose, onSi
             const base64String = reader.result as string;
             setIsUploadingAvatar(true);
             try {
-                const res = await fetch(`http://localhost:3001/api/users/${user.id}/avatar`, {
+                const res = await fetch(`/api/users/${user.id}/avatar`, {
                     method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ avatar: base64String })
@@ -95,7 +95,7 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({ user, onClose, onSi
 
     useEffect(() => {
         if (showAccount && user.id) {
-            fetch(`http://127.0.0.1:3001/api/users/${user.id}`)
+            fetch(`/api/users/${user.id}`)
                 .then(res => res.json())
                 .then(data => {
                     setAccountDetails(data);
@@ -108,7 +108,7 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({ user, onClose, onSi
         e.preventDefault();
         setIsSavingAccount(true);
         try {
-            const res = await fetch(`http://localhost:3001/api/users/${user.id}`, {
+            const res = await fetch(`/api/users/${user.id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(accountDetails)
@@ -167,17 +167,17 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({ user, onClose, onSi
             // Try primary user.id (may be numeric or custom string like USR12345)
             const fetchReferrals = async () => {
                 try {
-                    let res = await fetch(`http://localhost:3001/api/referrals/${encodeURIComponent(user.id)}`);
+                    let res = await fetch(`/api/referrals/${encodeURIComponent(user.id)}`);
                     if (!res.ok) throw new Error('Primary lookup failed');
                     let data = await res.json();
 
                     // If empty and user has email, try by email to get real user_id first
                     if ((!data || data.length === 0) && user.email) {
-                        const userRes = await fetch(`http://localhost:3001/api/users/by-email/${encodeURIComponent(user.email)}`);
+                        const userRes = await fetch(`/api/users/by-email/${encodeURIComponent(user.email)}`);
                         if (userRes.ok) {
                             const dbUser = await userRes.json();
                             if (dbUser.user_id && dbUser.user_id.toString() !== user.id) {
-                                const res2 = await fetch(`http://localhost:3001/api/referrals/${dbUser.user_id}`);
+                                const res2 = await fetch(`/api/referrals/${dbUser.user_id}`);
                                 if (res2.ok) {
                                     data = await res2.json();
                                 }
@@ -200,7 +200,7 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({ user, onClose, onSi
 
     useEffect(() => {
         if (showRank && user.id) {
-            fetch(`http://127.0.0.1:3001/api/associate/summary/${user.id}`)
+            fetch(`/api/associate/summary/${user.id}`)
                 .then(res => res.json())
                 .then(data => setRankSummary(data))
                 .catch(err => console.error("Error fetching rank summary:", err));
@@ -209,7 +209,7 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({ user, onClose, onSi
 
     useEffect(() => {
         if (showBookings && user.id) {
-            fetch(`http://localhost:3001/api/bookings/${user.id}`)
+            fetch(`/api/bookings/${user.id}`)
                 .then(res => res.json())
                 .then(data => {
                     if (Array.isArray(data)) {
@@ -222,7 +222,7 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({ user, onClose, onSi
 
     useEffect(() => {
         if (showPromo && user.id && (!user.promoCode || user.promoCode === 'PENDING')) {
-            fetch(`http://127.0.0.1:3001/api/users/${user.id}`)
+            fetch(`/api/users/${user.id}`)
                 .then(res => res.json())
                 .then(data => {
                     if (data.promo_code && onAccountUpdate) {

@@ -1,7 +1,7 @@
-
 import React, { useState, useRef } from 'react';
 import { TourPackage } from '../types';
 import { dbService } from '../services/dbService';
+import BannerBuilder from './BannerBuilder';
 
 interface AdminDashboardProps {
   onClose: () => void;
@@ -9,7 +9,7 @@ interface AdminDashboardProps {
 }
 
 const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onLogout }) => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'associates' | 'rankings' | 'packages' | 'bookings' | 'commissions' | 'payouts' | 'promocodes' | 'refunds' | 'commissionlevels' | 'traveldates'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'associates' | 'rankings' | 'packages' | 'bookings' | 'commissions' | 'payouts' | 'promocodes' | 'refunds' | 'commissionlevels' | 'traveldates' | 'bannergen'>('overview');
 
   const [usersList, setUsersList] = useState<any[]>([]);
   const [userSearch, setUserSearch] = useState('');
@@ -239,6 +239,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onLogout }) =>
             { id: 'refunds', icon: '🔄', label: 'Refunds' },
             { id: 'commissionlevels', icon: '⚖️', label: 'Commission Levels' },
             { id: 'traveldates', icon: '📅', label: 'Travel Dates' },
+            { id: 'bannergen', icon: '✨', label: 'AI Smart Banner' },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -1021,6 +1022,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onLogout }) =>
                 </tbody>
               </table>
             </div>
+          </div>
+        ) : activeTab === 'bannergen' ? (
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="mb-8">
+              <h3 className="text-3xl font-black text-slate-900 uppercase">AI Smart Banner Generator</h3>
+              <p className="text-slate-500 font-bold uppercase tracking-widest text-[10px] mt-2">Create professional marketing pamphlets in seconds</p>
+            </div>
+            <BannerBuilder />
           </div>
         ) : null}
       </div >

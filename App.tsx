@@ -1879,7 +1879,7 @@ const App: React.FC = () => {
 
       if ((isStaleId || needsPromoCode) && user.email) {
         try {
-          const response = await fetch(`http://127.0.0.1:3001/api/users/by-email/${encodeURIComponent(user.email)}`);
+          const response = await fetch(`/api/users/by-email/${encodeURIComponent(user.email)}`);
           if (response.ok) {
             const dbUser = await response.json();
             if (dbUser.user_id) {
@@ -1974,7 +1974,7 @@ const App: React.FC = () => {
     const isStaleId = isNaN(numericId) || numericId > 2147483647;
     if (isStaleId && authUser.email) {
       try {
-        const response = await fetch(`http://127.0.0.1:3001/api/users/by-email/${encodeURIComponent(authUser.email)}`);
+        const response = await fetch(`/api/users/by-email/${encodeURIComponent(authUser.email)}`);
         if (response.ok) {
           const dbUser = await response.json();
           if (dbUser.user_id) {
@@ -2004,9 +2004,10 @@ const App: React.FC = () => {
         // If the database has ANY packages at all (even if they are all inactive),
         // we should respect the database as the "Source of Truth" and stop using hardcoded fallbacks.
         if (allAdminTours && allAdminTours.length > 0) {
+          console.log(`[Tours] Found ${allAdminTours.length} tours in DB. Active: ${activeTours.length}`);
           setSignatureTours(activeTours);
         } else {
-          // Only fallback to hardcoded list if database is completely empty (no packages created yet)
+          console.log("[Tours] Database empty, using fallbacks");
           setSignatureTours(DEFAULT_TOURS);
         }
       } catch (err) {

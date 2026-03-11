@@ -1,0 +1,206 @@
+services:
+  # Databases
+  mongodb:
+    image: mongo:6
+    container_name: bodhasurvey-mongodb
+    restart: always
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: monkeysurvey
+    volumes:
+      - mongodb-data:/data/db
+    networks:
+      - bodhasurvey-network
+
+  postgres:
+    image: postgres:14
+    container_name: bodhasurvey-postgres
+    restart: always
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: monkeysurvey_analytics
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - bodhasurvey-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: bodhasurvey-redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - bodhasurvey-network
+
+  # Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: bodhasurvey-frontend
+    restart: always
+    ports:
+      - "8081:80"
+    depends_on:
+      - api-gateway
+    networks:
+      - bodhasurvey-network
+    # SSL volumes added back
+    volumes:
+      - /etc/letsencrypt/live/bodhasurvey.duckdns.org/fullchain.pem:/etc/nginx/ssl/server.crt:ro
+      - /etc/letsencrypt/live/bodhasurvey.duckdns.org/privkey.pem:/etc/nginx/ssl/server.key:ro
+    # API Gateway
+  api-gateway:
+    build:
+      context: ./backend
+      dockerfile: api-gateway/Dockerfile
+    container_name: bodhasurvey-api-gateway
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - USER_SERVICE_URL=http://user-service:3001
+      - SURVEY_SERVICE_URL=http://survey-service:3002
+      - RESPONSE_SERVICE_URL=http://response-service:3003
+      - ANALYTICS_SERVICE_URL=http://analytics-service:3004
+      - NOTIFICATION_SERVICE_URL=http://notification-service:3005
+      - AI_SERVICE_URL=http://ai-service:3006
+      - NODE_ENV=production
+    depends_on:
+      - user-service
+      - survey-service
+      - response-service
+      - analytics-service
+      - notification-service
+      - ai-service
+    networks:
+      - bodhasurvey-network
+
+  # User Service
+  user-service:
+    build:
+      context: ./backend
+      dockerfile: user-service/Dockerfile
+    container_name: bodhasurvey-user-service
+    restart: always
+    ports:
+      - "3001:3001"
+    environment:
+      - PORT=3001
+      - MONGODB_URI=mongodb+srv://dwaithdevkalyan_db_user:2TfgyQfGmpiuImO9@monkeysurvey.jufdxfk.mongodb.net/monkeysurvey?appName=monkeysurvey
+      - JWT_SECRET=change-this-in-production-secret-key-12345
+      - NODE_ENV=production
+    depends_on:
+      - mongodb
+    networks:
+      - bodhasurvey-network
+
+  # Survey Service
+  survey-service:
+    build:
+      context: ./backend
+      dockerfile: survey-service/Dockerfile
+    container_name: bodhasurvey-survey-service
+    restart: always
+    ports:
+      - "3002:3002"
+    environment:
+      - PORT=3002
+      - MONGODB_URI=mongodb+srv://dwaithdevkalyan_db_user:2TfgyQfGmpiuImO9@monkeysurvey.jufdxfk.mongodb.net/monkeysurvey?appName=monkeysurvey
+      - JWT_SECRET=change-this-in-production-secret-key-12345
+      - NODE_ENV=production
+    depends_on:
+      - mongodb
+    networks:
+      - bodhasurvey-network
+
+  # Response Service
+  response-service:
+    build:
+      context: ./backend
+      dockerfile: response-service/Dockerfile
+    container_name: bodhasurvey-response-service
+    restart: always
+    ports:
+      - "3003:3003"
+    environment:
+      - PORT=3003
+      - MONGODB_URI=mongodb+srv://dwaithdevkalyan_db_user:2TfgyQfGmpiuImO9@monkeysurvey.jufdxfk.mongodb.net/monkeysurvey?appName=monkeysurvey
+      - JWT_SECRET=change-this-in-production-secret-key-12345
+      - NODE_ENV=production
+    depends_on:
+      - mongodb
+    networks:
+      - bodhasurvey-network
+
+  # Analytics Service
+  analytics-service:
+    build:
+      context: ./backend
+      dockerfile: analytics-service/Dockerfile
+    container_name: bodhasurvey-analytics-service
+    restart: always
+    ports:
+      - "3004:3004"
+    environment:
+      - PORT=3004
+      - POSTGRES_URI=postgresql://postgres:postgres@postgres:5432/monkeysurvey_analytics
+      - JWT_SECRET=change-this-in-production-secret-key-12345
+      - NODE_ENV=production
+    depends_on:
+      - postgres
+    networks:
+      - bodhasurvey-network
+
+  # Notification Service
+  notification-service:
+    build:
+      context: ./backend
+      dockerfile: notification-service/Dockerfile
+    container_name: bodhasurvey-notification-service
+    restart: always
+    ports:
+      - "3005:3005"
+    environment:
+      - PORT=3005
+      - MONGODB_URI=mongodb+srv://dwaithdevkalyan_db_user:2TfgyQfGmpiuImO9@monkeysurvey.jufdxfk.mongodb.net/monkeysurvey?appName=monkeysurvey
+      - JWT_SECRET=change-this-in-production-secret-key-12345
+      - NODE_ENV=production
+    depends_on:
+      - mongodb
+    networks:
+      - bodhasurvey-network
+
+  # AI Service
+  ai-service:
+    build:
+      context: ./backend
+      dockerfile: ai-service/Dockerfile
+    container_name: bodhasurvey-ai-service
+    restart: always
+    ports:
+      # Moved mapping to 3007 to avoid conflict with anything else if 3006 is weirdly bound
+      - "3007:3006"
+    environment:
+      - PORT=3006
+      - JWT_SECRET=change-this-in-production-secret-key-12345
+      - NODE_ENV=production
+    networks:
+      - bodhasurvey-network
+
+volumes:
+  mongodb-data:
+  postgres-data:
+  redis-data:
+
+networks:
+  bodhasurvey-network:
+    driver: bridge

@@ -22,6 +22,10 @@
     "crypto-js": "^4.2.0",
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
+    "fabric": "^7.2.0",
+    "html-to-image": "^1.11.13",
+    "jspdf": "^4.2.0",
+    "lucide-react": "^0.577.0",
     "pg": "^8.18.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4"

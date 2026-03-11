@@ -343,36 +343,42 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, tourTitle,
                                             Please choose an option above
                                         </div>
                                     ) : travelOption === 'scheduled' ? (
-                                        <div className="relative group">
-                                            {availableDates && availableDates !== '2025 Flexible' && availableDates.includes('-') ? (
-                                                <>
-                                                    <select
-                                                        value={travelDate}
-                                                        onChange={(e) => setTravelDate(e.target.value)}
-                                                        className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl focus:border-indigo-500 focus:outline-none font-bold text-sm h-[50px] appearance-none cursor-pointer hover:border-indigo-300 transition-colors"
-                                                        required
-                                                    >
-                                                        <option value="">Choose a Scheduled Date</option>
-                                                        {availableDates.split(',').map(d => d.trim()).filter(d => Boolean(d)).map(date => (
-                                                            <option key={date} value={date}>
-                                                                {new Date(date).toLocaleDateString('en-IN', {
-                                                                    day: '2-digit',
-                                                                    month: 'long',
-                                                                    year: 'numeric'
-                                                                })}
-                                                            </option>
-                                                        ))}
-                                                    </select>
-                                                    <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 group-hover:text-indigo-500 transition-colors">
-                                                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" /></svg>
+                                        availableDates && availableDates.trim() !== '' ? (
+                                            <div className="relative group">
+                                                {availableDates.includes('-') ? (
+                                                    <>
+                                                        <select
+                                                            value={travelDate}
+                                                            onChange={(e) => setTravelDate(e.target.value)}
+                                                            className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl focus:border-indigo-500 focus:outline-none font-bold text-sm h-[50px] appearance-none cursor-pointer hover:border-indigo-300 transition-colors"
+                                                            required
+                                                        >
+                                                            <option value="">Choose a Scheduled Date</option>
+                                                            {availableDates.split(',').map(d => d.trim()).filter(d => Boolean(d)).map(date => (
+                                                                <option key={date} value={date}>
+                                                                    {date.includes('-') ? new Date(date).toLocaleDateString('en-IN', {
+                                                                        day: '2-digit',
+                                                                        month: 'long',
+                                                                        year: 'numeric'
+                                                                    }) : date}
+                                                                </option>
+                                                            ))}
+                                                        </select>
+                                                        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 group-hover:text-indigo-500 transition-colors">
+                                                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" /></svg>
+                                                        </div>
+                                                    </>
+                                                ) : (
+                                                    <div className="h-[50px] flex items-center px-4 bg-indigo-50 rounded-xl border-2 border-indigo-200 text-indigo-700 text-xs font-bold">
+                                                        {availableDates}
                                                     </div>
-                                                </>
-                                            ) : (
-                                                <div className="h-[50px] flex items-center px-4 bg-amber-50 rounded-xl border-2 border-amber-200 text-amber-700 text-xs font-bold">
-                                                    No scheduled dates available.
-                                                </div>
-                                            )}
-                                        </div>
+                                                )}
+                                            </div>
+                                        ) : (
+                                            <div className="h-[50px] flex items-center px-4 bg-amber-50 rounded-xl border-2 border-amber-200 text-amber-700 text-xs font-bold italic">
+                                                No fixed dates. Use "Flexible" option.
+                                            </div>
+                                        )
                                     ) : (
                                         <div className="relative">
                                             <input
