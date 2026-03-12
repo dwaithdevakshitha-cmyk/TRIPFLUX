@@ -162,9 +162,9 @@ const TourDetails: React.FC<TourDetailsProps> = ({ tour, user, onBack }) => {
     return (
         <div className="animate-in fade-in duration-700 bg-white min-h-screen">
             {/* Hero Section */}
-            <div className="relative h-[60vh] w-full">
+            <div className="relative h-[40vh] md:h-[60vh] w-full">
                 <img src={tour.image} className="w-full h-full object-cover" alt={tour.title} />
-                <div className="absolute inset-0 bg-black/40 flex flex-col justify-end p-8 md:p-16">
+                <div className="absolute inset-0 bg-black/40 flex flex-col justify-end p-6 md:p-16">
                     <div className="max-w-7xl mx-auto w-full">
                         <button
                             onClick={onBack}
@@ -175,14 +175,14 @@ const TourDetails: React.FC<TourDetailsProps> = ({ tour, user, onBack }) => {
                             </svg>
                             Back to Explore
                         </button>
-                        <span className="text-indigo-400 font-black text-xs uppercase tracking-[0.4em] mb-4 block">{tour.category} PACKAGE</span>
-                        <h1 className="text-5xl md:text-7xl font-black text-white tracking-tighter uppercase mb-2">{tour.title}</h1>
-                        <p className="text-white/80 text-lg font-medium">{tour.destination} • {tour.duration}</p>
+                        <span className="text-indigo-400 font-black text-[10px] md:text-xs uppercase tracking-[0.4em] mb-4 block">{tour.category} PACKAGE</span>
+                        <h1 className="text-3xl md:text-5xl lg:text-7xl font-black text-white tracking-tighter uppercase mb-2 leading-tight">{tour.title}</h1>
+                        <p className="text-white/80 text-sm md:text-lg font-medium">{tour.destination} • {tour.duration}</p>
                     </div>
                 </div>
             </div>
 
-            <div className="max-w-7xl mx-auto px-6 py-16 grid grid-cols-1 lg:grid-cols-3 gap-16">
+            <div className="max-w-7xl mx-auto px-4 md:px-6 py-8 md:py-16 grid grid-cols-1 lg:grid-cols-3 gap-8 md:gap-16">
                 {/* Left: Itinerary */}
                 <div className="lg:col-span-2 space-y-12">
                     <div className="flex items-center gap-4 mb-8">
@@ -206,7 +206,7 @@ const TourDetails: React.FC<TourDetailsProps> = ({ tour, user, onBack }) => {
                     </div>
 
                     {tour.description && (
-                        <div className="bg-slate-50 rounded-[32px] p-8 border border-slate-100 shadow-sm animate-in fade-in slide-in-from-bottom-4 duration-700">
+                        <div className="bg-slate-50 rounded-2xl md:rounded-[32px] p-6 md:p-8 border border-slate-100 shadow-sm animate-in fade-in slide-in-from-bottom-4 duration-700">
                             <h3 className="text-xl font-extrabold text-[#0c2d3a] mb-4 flex items-center gap-3">
                                 Overview
                                 <span className="h-1 w-8 bg-indigo-600 rounded-full"></span>
@@ -230,8 +230,8 @@ const TourDetails: React.FC<TourDetailsProps> = ({ tour, user, onBack }) => {
                                     </div>
 
                                     {/* Day Card */}
-                                    <div className="bg-white rounded-[32px] border border-slate-100 shadow-xl shadow-slate-200/40 overflow-hidden hover:shadow-2xl hover:shadow-slate-200/60 transition-all duration-500 group">
-                                        <div className="p-8 w-full">
+                                    <div className="bg-white rounded-2xl md:rounded-[32px] border border-slate-100 shadow-xl shadow-slate-200/40 overflow-hidden hover:shadow-2xl hover:shadow-slate-200/60 transition-all duration-500 group">
+                                        <div className="p-6 md:p-8 w-full">
                                             <div className="flex items-center justify-between mb-6">
                                                 <h3 className="text-xl font-extrabold text-[#0c2d3a] flex items-center gap-3">
                                                     {day.title}

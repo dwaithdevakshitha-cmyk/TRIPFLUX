@@ -241,7 +241,7 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({ user, onClose, onSi
 
             <div className="relative w-full max-w-lg bg-slate-900 border border-white/5 rounded-[40px] shadow-2xl backdrop-blur-3xl animate-in zoom-in-95 duration-500 max-h-[90vh] flex flex-col overflow-hidden">
                 {/* Header - Fixed */}
-                <div className="p-10 pb-6 flex justify-between items-start shrink-0">
+                <div className="p-6 md:p-10 pb-4 md:pb-6 flex justify-between items-start shrink-0">
                     <div className="flex items-center gap-4">
                         <div className={`w-16 h-16 rounded-2xl overflow-hidden shadow-2xl border-2 border-indigo-500 relative group ${isUploadingAvatar ? 'opacity-50 blur-sm' : ''} transition-all`}>
                             <img src={accountDetails.avatar || user.avatar || `https://ui-avatars.com/api/?name=${user.name}&background=6366f1&color=fff`} alt={user.name} className="w-full h-full object-cover" />
@@ -265,7 +265,7 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({ user, onClose, onSi
                 </div>
 
                 {/* Main Body - Scrollable */}
-                <div className="flex-1 overflow-y-auto px-10 pb-10 custom-scrollbar">
+                <div className="flex-1 overflow-y-auto px-6 md:px-10 pb-6 md:pb-10 custom-scrollbar">
                     <div className="space-y-6">
                         <div className="bg-white/5 border border-white/10 rounded-3xl p-6">
                             <label className="text-[10px] font-black text-white/30 uppercase tracking-widest">Email / Contact</label>
@@ -299,7 +299,7 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({ user, onClose, onSi
                                 {showAccount && (
                                     <div className="mt-2 p-4 border border-white/5 bg-slate-900/50 rounded-2xl w-full animate-in slide-in-from-top-2 duration-300">
                                         <form onSubmit={handleAccountSubmit} className="space-y-4">
-                                            <div className="grid grid-cols-2 gap-4">
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                                 <div className="space-y-1">
                                                     <label className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] ml-1">First Name</label>
                                                     <input required type="text" value={accountDetails.first_name || ''} onChange={(e) => setAccountDetails({ ...accountDetails, first_name: e.target.value })} className="w-full px-4 py-2 bg-black/30 border border-white/10 rounded-xl text-white outline-none focus:border-indigo-500 text-sm font-medium" />
@@ -382,7 +382,7 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({ user, onClose, onSi
                                                     </div>
                                                 )}
 
-                                                <div className="pt-4 border-t border-white/5 grid grid-cols-2 gap-4">
+                                                <div className="pt-4 border-t border-white/5 grid grid-cols-1 sm:grid-cols-2 gap-4">
                                                     <div className="p-3 bg-white/5 rounded-xl text-center">
                                                         <p className="text-[9px] font-black text-white/30 uppercase tracking-widest mb-1">Rank Level</p>
                                                         <p className="text-xs font-bold text-white uppercase tracking-widest">Active Partner</p>

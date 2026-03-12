@@ -1827,6 +1827,8 @@ import TourDetails from './components/TourDetails';
 import SignUp from './components/SignUp';
 
 const App: React.FC = () => {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [showAdminDashboard, setShowAdminDashboard] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [status, setStatus] = useState<AppStatus>(() => {
     try {
@@ -2046,22 +2048,22 @@ const App: React.FC = () => {
         <div className="absolute inset-0 bg-gradient-to-t from-[#0c2d3a] via-[#0c2d3a]/20 to-transparent flex flex-col justify-center items-center text-center px-6">
           <div className="max-w-4xl space-y-6">
             <span className="text-indigo-400 font-extrabold text-[10px] uppercase tracking-[0.5em] mb-4 block animate-in slide-in-from-top-4 duration-700">EXPERIENCE THE EXTRAORDINARY</span>
-            <h1 className="text-2xl md:text-4xl font-black text-white tracking-tighter uppercase leading-[0.9] animate-in slide-in-from-bottom-8 duration-1000">
-              Your Journey, <br /> Our Intelligence
+            <h1 className="text-3xl md:text-5xl lg:text-7xl font-black text-white tracking-tighter uppercase leading-[0.9] animate-in slide-in-from-bottom-8 duration-1000">
+              Your Journey, <br className="hidden sm:block" /> Our Intelligence
             </h1>
             <p className="text-white/80 text-sm md:text-lg font-medium max-w-2xl mx-auto animate-in fade-in slide-in-from-bottom-12 duration-1200 delay-300">
               Discover breathtaking destinations with AI-curated itineraries and premium local grounding.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center pt-8 animate-in fade-in slide-in-from-bottom-16 duration-1200 delay-500">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center pt-8 animate-in fade-in slide-in-from-bottom-16 duration-1200 delay-500 w-full sm:w-auto">
               <button
                 onClick={() => setCurrentView('INTERNATIONAL')}
-                className="px-10 py-4 bg-white text-[#0c2d3a] rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-indigo-50 transition-all shadow-2xl hover:scale-105"
+                className="px-8 md:px-10 py-4 bg-white text-[#0c2d3a] rounded-2xl font-black uppercase text-[10px] md:text-xs tracking-widest hover:bg-indigo-50 transition-all shadow-2xl hover:scale-105"
               >
                 International Tours
               </button>
               <button
                 onClick={() => setCurrentView('PILGRIMAGE')}
-                className="px-10 py-4 bg-indigo-600 text-white rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-indigo-700 transition-all shadow-2xl hover:scale-105"
+                className="px-8 md:px-10 py-4 bg-indigo-600 text-white rounded-2xl font-black uppercase text-[10px] md:text-xs tracking-widest hover:bg-indigo-700 transition-all shadow-2xl hover:scale-105"
               >
                 Temple Specials
               </button>
@@ -2117,7 +2119,7 @@ const App: React.FC = () => {
           <h2 className="text-2xl font-black text-[#0c2d3a] uppercase tracking-tighter">Domestic Specials</h2>
           <div className="h-0.5 w-16 bg-[#0c2d3a] mx-auto mt-2"></div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-10">
           {getToursByCategory('Domestic').slice(0, 3).map(tour => <TourCard key={tour.id} tour={tour} onSelect={handleTourSelect} />)}
         </div>
         <div className="mt-8 text-center">
@@ -2185,6 +2187,8 @@ const App: React.FC = () => {
             currentView={currentView}
             onProfileClick={() => setShowProfile(true)}
             onGoToDashboard={() => { window.location.hash = 'admin'; setStatus(AppStatus.ADMIN); }}
+            isMenuOpen={isMenuOpen}
+            setIsMenuOpen={setIsMenuOpen}
           />
         </>
       )}

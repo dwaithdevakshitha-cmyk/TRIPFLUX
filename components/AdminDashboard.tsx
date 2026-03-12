@@ -10,6 +10,7 @@ interface AdminDashboardProps {
 
 const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onLogout }) => {
   const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'associates' | 'rankings' | 'packages' | 'bookings' | 'commissions' | 'payouts' | 'promocodes' | 'refunds' | 'commissionlevels' | 'traveldates' | 'bannergen'>('overview');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const [usersList, setUsersList] = useState<any[]>([]);
   const [userSearch, setUserSearch] = useState('');
@@ -60,7 +61,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onLogout }) =>
     destination: '',
     duration: '',
     price: '',
-    description: '',
     category: 'Domestic',
     image: '',
     location: '',
@@ -159,7 +159,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onLogout }) =>
         destination: '',
         duration: '',
         price: '',
-        description: '',
         category: 'Domestic',
         image: '',
         location: '',
@@ -217,9 +216,32 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onLogout }) =>
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex">
-      {/* Sidebar */}
-      <div className="w-64 bg-slate-900 flex flex-col fixed top-0 left-0 h-screen overflow-y-auto shadow-2xl z-50">
+    <div className="min-h-screen bg-slate-50 flex flex-col lg:flex-row">
+      {/* Mobile Header Toggle */}
+      <div className="lg:hidden bg-slate-900 p-4 flex justify-between items-center sticky top-0 z-[60] shadow-lg">
+        <h2 className="text-xl font-black text-white tracking-tight">TripFlux</h2>
+        <button
+          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+          className="p-2 text-white bg-indigo-600 rounded-lg"
+        >
+          {isSidebarOpen ? (
+            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          ) : (
+            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          )}
+        </button>
+      </div>
+
+      {/* Sidebar - Fixed on desktop, overlay on mobile */}
+      <div className={`
+        fixed inset-y-0 left-0 z-50 w-64 bg-slate-900 flex flex-col transition-transform duration-300 ease-in-out lg:translate-x-0
+        ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+        h-full lg:h-screen overflow-y-auto shadow-2xl
+      `}>
         <div className="p-6 pb-2">
           <h2 className="text-2xl font-black text-white tracking-tight leading-none mb-1">TripFlux</h2>
           <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Admin Command</p>
@@ -243,7 +265,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onLogout }) =>
           ].map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
+              onClick={() => {
+                setActiveTab(tab.id as any);
+                setIsSidebarOpen(false); // Close on selection on mobile
+              }}
               className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all ${activeTab === tab.id ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
             >
               <span className="text-lg">{tab.icon}</span>
@@ -262,8 +287,16 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onLogout }) =>
         </div>
       </div>
 
+      {/* Sidebar Overlay for mobile */}
+      {isSidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden backdrop-blur-sm"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
       {/* Main Content */}
-      <div className="ml-64 flex-1 p-8 lg:p-12 overflow-x-hidden">
+      <div className="flex-1 lg:ml-64 p-4 md:p-8 lg:p-12 overflow-x-hidden">
 
         {activeTab === 'overview' ? (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -494,7 +527,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onLogout }) =>
                     destination: '',
                     duration: '',
                     price: '',
-                    description: '',
                     category: 'Domestic',
                     image: '',
                     location: '',
@@ -543,7 +575,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onLogout }) =>
                               destination: p.destination,
                               duration: p.duration,
                               price: p.price.toString(),
-                              description: p.description || '',
                               category: p.category || 'Domestic',
                               image: p.image || '',
                               location: p.location || '',
@@ -1174,15 +1205,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onLogout }) =>
                     </div>
                   </div>
 
-                  <div className="space-y-2">
-                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Description / Highlights</label>
-                    <textarea
-                      value={newPackage.description}
-                      onChange={(e) => setNewPackage({ ...newPackage, description: e.target.value })}
-                      className="w-full h-24 px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-600 focus:bg-white outline-none transition-all text-sm"
-                      placeholder="Enter package details, inclusions or highlights..."
-                    />
-                  </div>
 
                   <div className="space-y-4">
                     <div className="flex justify-between items-center">

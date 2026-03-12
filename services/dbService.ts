@@ -100,7 +100,7 @@ export const dbService = {
     return await executeSql(
       "INSERT INTO packages (name, destination, duration, price, description, category, image, status, itinerary, location, track) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)",
       [
-        pkg.name, pkg.destination, pkg.duration, pkg.price, pkg.description,
+        pkg.name, pkg.destination, pkg.duration, pkg.price, pkg.description || '',
         pkg.category, pkg.image, pkg.status || 'active',
         JSON.stringify(pkg.itinerary || []),
         pkg.location || '',
@@ -113,7 +113,7 @@ export const dbService = {
     return await executeSql(
       "UPDATE packages SET name=$1, destination=$2, duration=$3, price=$4, description=$5, category=$6, image=$7, status=$8, itinerary=$9, location=$10, track=$11 WHERE package_id=$12",
       [
-        pkg.name, pkg.destination, pkg.duration, pkg.price, pkg.description,
+        pkg.name, pkg.destination, pkg.duration, pkg.price, pkg.description || '',
         pkg.category, pkg.image, pkg.status,
         JSON.stringify(pkg.itinerary || []),
         pkg.location || '',

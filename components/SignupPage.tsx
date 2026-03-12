@@ -184,7 +184,7 @@ const SignupPage: React.FC<SignupPageProps> = ({ onBack, onAuthSuccess }) => {
             <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-600/10 rounded-full blur-[120px]"></div>
             <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-600/10 rounded-full blur-[120px]"></div>
 
-            <div className="w-full max-w-xl bg-white/5 backdrop-blur-xl border border-white/10 rounded-[40px] p-8 md:p-12 shadow-2xl relative z-10">
+            <div className="w-full max-w-xl bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl md:rounded-[40px] p-6 md:p-12 shadow-2xl relative z-10 mx-auto">
                 <div className="text-center mb-10">
                     <h2 className="text-4xl md:text-5xl font-black text-white tracking-tighter mb-4">
                         {isRegistering ? 'CREATE ACCOUNT' : 'JOIN TRIPFLUX'}
@@ -220,7 +220,7 @@ const SignupPage: React.FC<SignupPageProps> = ({ onBack, onAuthSuccess }) => {
                 <form onSubmit={handleSubmit} className="space-y-5">
                     {isRegistering && (
                         <>
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <label className="text-[11px] font-black text-white/40 uppercase tracking-[0.2em] ml-1">First Name</label>
                                     <input
@@ -228,7 +228,7 @@ const SignupPage: React.FC<SignupPageProps> = ({ onBack, onAuthSuccess }) => {
                                         value={firstName}
                                         onChange={(e) => setFirstName(e.target.value)}
                                         placeholder="First Name"
-                                        className="w-full px-6 py-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder:text-white/20 focus:outline-none focus:border-indigo-500 transition-all font-medium"
+                                        className="w-full px-4 md:px-6 py-3 md:py-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder:text-white/20 focus:outline-none focus:border-indigo-500 transition-all font-medium text-sm"
                                         required
                                     />
                                 </div>
@@ -239,7 +239,7 @@ const SignupPage: React.FC<SignupPageProps> = ({ onBack, onAuthSuccess }) => {
                                         value={lastName}
                                         onChange={(e) => setLastName(e.target.value)}
                                         placeholder="Last Name"
-                                        className="w-full px-6 py-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder:text-white/20 focus:outline-none focus:border-indigo-500 transition-all font-medium"
+                                        className="w-full px-4 md:px-6 py-3 md:py-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder:text-white/20 focus:outline-none focus:border-indigo-500 transition-all font-medium text-sm"
                                         required
                                     />
                                 </div>
@@ -249,7 +249,7 @@ const SignupPage: React.FC<SignupPageProps> = ({ onBack, onAuthSuccess }) => {
 
                     {isRegistering && loginType === 'ASSOCIATE' && (
                         <>
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <label className="text-[11px] font-black text-white/40 uppercase tracking-[0.2em] ml-1">Phone Number</label>
                                     <input
@@ -263,7 +263,7 @@ const SignupPage: React.FC<SignupPageProps> = ({ onBack, onAuthSuccess }) => {
                                             setPhoneError(validatePhone(val));
                                         }}
                                         placeholder="e.g. 9876543210"
-                                        className="w-full px-6 py-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder:text-white/20 focus:outline-none focus:border-indigo-500 transition-all font-medium"
+                                        className="w-full px-4 md:px-6 py-3 md:py-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder:text-white/20 focus:outline-none focus:border-indigo-500 transition-all font-medium text-sm"
                                         required
                                     />
                                     {phoneError && <p className="text-red-400 text-[9px] font-bold mt-1 ml-1 uppercase">{phoneError}</p>}
@@ -275,12 +275,12 @@ const SignupPage: React.FC<SignupPageProps> = ({ onBack, onAuthSuccess }) => {
                                         max={new Date(new Date().setFullYear(new Date().getFullYear() - 18)).toISOString().split('T')[0]}
                                         value={dob}
                                         onChange={(e) => setDob(e.target.value)}
-                                        className="w-full px-6 py-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder:[color-scheme:dark] focus:outline-none focus:border-indigo-500 transition-all font-medium"
+                                        className="w-full px-4 md:px-6 py-3 md:py-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder:[color-scheme:dark] focus:outline-none focus:border-indigo-500 transition-all font-medium text-sm"
                                         required
                                     />
                                 </div>
                             </div>
-                            <div className="grid grid-cols-2 gap-4 mt-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
                                 <div className="space-y-2">
                                     <label className="text-[11px] font-black text-white/40 uppercase tracking-[0.2em] ml-1">PAN Card Number</label>
                                     <input
@@ -306,7 +306,7 @@ const SignupPage: React.FC<SignupPageProps> = ({ onBack, onAuthSuccess }) => {
                                         }}
                                         placeholder="ABCDE1234F"
                                         maxLength={10}
-                                        className={`w-full px-6 py-4 bg-white/5 border rounded-2xl text-white placeholder:text-white/20 focus:outline-none transition-all font-mono font-bold tracking-widest ${panError ? 'border-red-500 focus:border-red-500' :
+                                        className={`w-full px-4 md:px-6 py-3 md:py-4 bg-white/5 border rounded-2xl text-white placeholder:text-white/20 focus:outline-none transition-all font-mono font-bold tracking-widest text-sm ${panError ? 'border-red-500 focus:border-red-500' :
                                             panNumber.length === 10 ? 'border-emerald-500 focus:border-emerald-500' :
                                                 'border-white/10 focus:border-indigo-500'
                                             }`}
@@ -327,7 +327,7 @@ const SignupPage: React.FC<SignupPageProps> = ({ onBack, onAuthSuccess }) => {
                                     <select
                                         value={selectedRole}
                                         onChange={(e) => setSelectedRole(e.target.value as 'admin' | 'associate')}
-                                        className="w-full px-6 py-4 bg-white/5 border border-white/10 rounded-2xl text-white focus:outline-none focus:border-indigo-500 transition-all font-medium appearance-none"
+                                        className="w-full px-4 md:px-6 py-3 md:py-4 bg-white/5 border border-white/10 rounded-2xl text-white focus:outline-none focus:border-indigo-500 transition-all font-medium appearance-none text-sm"
                                     >
                                         <option value="associate" className="bg-slate-900">Associate</option>
                                         <option value="admin" className="bg-slate-900">Admin</option>
