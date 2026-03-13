@@ -8,6 +8,7 @@ interface TourDetailsProps {
     tour: TourPackage;
     user: User | null;
     onBack: () => void;
+    onRequireLogin?: () => void;
 }
 
 interface DayLocation {
@@ -19,7 +20,7 @@ interface DayLocation {
     error?: string;
 }
 
-const TourDetails: React.FC<TourDetailsProps> = ({ tour, user, onBack }) => {
+const TourDetails: React.FC<TourDetailsProps> = ({ tour, user, onBack, onRequireLogin }) => {
     const [dayLocations, setDayLocations] = useState<DayLocation[]>([]);
     const [showTrackModal, setShowTrackModal] = useState(false);
     const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -306,7 +307,13 @@ const TourDetails: React.FC<TourDetailsProps> = ({ tour, user, onBack }) => {
                                 <p className="text-5xl font-black tracking-tighter">{tour.price}</p>
                             </div>
                             <button
-                                onClick={() => setShowPaymentModal(true)}
+                                onClick={() => {
+                                    if (!user) {
+                                        onRequireLogin?.();
+                                    } else {
+                                        setShowPaymentModal(true);
+                                    }
+                                }}
                                 className="w-full py-4 bg-white text-[#0c2d3a] rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-indigo-50 transition-colors shadow-lg shadow-black/20"
                             >
                                 Book This Package

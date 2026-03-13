@@ -5,9 +5,10 @@ import { storageService } from '../services/storageService';
 interface SignupPageProps {
     onBack: () => void;
     onAuthSuccess: (user: User) => void;
+    isModal?: boolean;
 }
 
-const SignupPage: React.FC<SignupPageProps> = ({ onBack, onAuthSuccess }) => {
+const SignupPage: React.FC<SignupPageProps> = ({ onBack, onAuthSuccess, isModal }) => {
     const [loginType, setLoginType] = useState<'USER' | 'ASSOCIATE'>('USER');
     const [isRegistering, setIsRegistering] = useState(() => {
         return new URLSearchParams(window.location.search).has('ref');
@@ -179,7 +180,7 @@ const SignupPage: React.FC<SignupPageProps> = ({ onBack, onAuthSuccess }) => {
     };
 
     return (
-        <div className="min-h-[calc(100vh-80px)] bg-[#0c2d3a] flex items-center justify-center p-6 relative overflow-hidden">
+        <div className={`${isModal ? 'w-full' : 'min-h-[calc(100vh-80px)] p-6'} bg-[#0c2d3a] flex items-center justify-center relative overflow-hidden rounded-[inherit]`}>
             {/* Decorative background elements */}
             <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-600/10 rounded-full blur-[120px]"></div>
             <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-600/10 rounded-full blur-[120px]"></div>

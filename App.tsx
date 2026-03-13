@@ -1918,14 +1918,9 @@ const App: React.FC = () => {
     if (!user &&
       currentView !== 'SIGNUP' &&
       status !== AppStatus.ADMIN_LOGIN) {
-      // Allow status === AppStatus.ADMIN_LOGIN to show without user.
-      // But if they are just AppStatus.ADMIN and no user, redirect to SIGNUP
-      if (status !== AppStatus.ADMIN) {
-        setCurrentView('SIGNUP');
-      } else {
+      if (status === AppStatus.ADMIN) {
         // status is ADMIN but no user, they shouldn't be here
         setStatus(AppStatus.IDLE);
-        setCurrentView('SIGNUP');
       }
     }
 
@@ -1944,6 +1939,7 @@ const App: React.FC = () => {
   const [signatureTours, setSignatureTours] = useState<TourPackage[]>([]);
   const [selectedTour, setSelectedTour] = useState<TourPackage | null>(null);
   const [isToursLoading, setIsToursLoading] = useState(true);
+  const [showLoginModal, setShowLoginModal] = useState(false);
   const [activeHero, setActiveHero] = useState(0);
   const heroImages = [
     '/assets/images/wing-plane-left.jpg',
@@ -1990,10 +1986,13 @@ const App: React.FC = () => {
       } catch (e) { /* keep original if backend down */ }
     }
     setUser(authUser);
+    setShowLoginModal(false);
     if (authUser.role === 'admin') {
       setStatus(AppStatus.ADMIN);
     } else {
-      setCurrentView('HOME');
+      if (currentView === 'SIGNUP') {
+        setCurrentView('HOME');
+      }
     }
   };
 
@@ -2179,11 +2178,11 @@ const App: React.FC = () => {
 
           <Header
             user={user}
-            onLogout={() => { setUser(null); setCurrentView('SIGNUP'); }}
-            onSignIn={() => { setCurrentView('SIGNUP'); window.scrollTo(0, 0); }}
+            onLogout={() => { setUser(null); }}
+            onSignIn={() => { setShowLoginModal(true); }}
             onViewChange={(view) => { setCurrentView(view); window.scrollTo(0, 0); }}
             onAdminClick={() => { window.location.hash = 'admin'; setStatus(AppStatus.ADMIN_LOGIN); }}
-            onAssociateLogin={() => { setCurrentView('SIGNUP'); window.scrollTo(0, 0); }}
+            onAssociateLogin={() => { setShowLoginModal(true); }}
             currentView={currentView}
             onProfileClick={() => setShowProfile(true)}
             onGoToDashboard={() => { window.location.hash = 'admin'; setStatus(AppStatus.ADMIN); }}
@@ -2203,7 +2202,7 @@ const App: React.FC = () => {
         currentView === 'SIGNUP' ? (
           <SignupPage onBack={() => setCurrentView('HOME')} onAuthSuccess={handleAuthSuccess} />
         ) : currentView === 'TOUR_DETAILS' && selectedTour ? (
-          <TourDetails tour={selectedTour} user={user} onBack={() => setCurrentView('INTERNATIONAL')} />
+          <TourDetails tour={selectedTour} user={user} onBack={() => setCurrentView('INTERNATIONAL')} onRequireLogin={() => setShowLoginModal(true)} />
         ) : (
           <main className="min-h-screen bg-white">
             {currentView === 'HOME' && renderHome()}
@@ -2270,7 +2269,24 @@ const App: React.FC = () => {
         )
       )}
 
-      {showProfile && user && <ProfileDashboard user={user} onClose={() => setShowProfile(false)} onSignOut={() => { setShowProfile(false); setUser(null); setCurrentView('SIGNUP'); }} onAccountUpdate={(updatedUser) => setUser(updatedUser)} />}
+      {showProfile && user && <ProfileDashboard user={user} onClose={() => setShowProfile(false)} onSignOut={() => { setShowProfile(false); setUser(null); setCurrentView('HOME'); }} onAccountUpdate={(updatedUser) => setUser(updatedUser)} />}
+
+      {showLoginModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="relative w-full max-w-xl max-h-[90vh] overflow-y-auto rounded-3xl md:rounded-[40px] shadow-2xl custom-scrollbar" style={{ backgroundColor: '#0c2d3a' }}>
+            <button
+              onClick={() => setShowLoginModal(false)}
+              className="absolute top-6 right-6 p-2 text-white/50 hover:text-white transition-colors z-50 bg-black/20 rounded-full"
+            >
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            <SignupPage onBack={() => setShowLoginModal(false)} onAuthSuccess={handleAuthSuccess} isModal={true} />
+          </div>
+        </div>
+      )}
+
       <AuthModal isOpen={false} onClose={() => { }} onAuthSuccess={handleAuthSuccess} />
       <MobileNav onHome={() => setCurrentView('HOME')} onAdminClick={() => { window.location.hash = 'admin'; setStatus(AppStatus.ADMIN_LOGIN); }} />
     </div>
