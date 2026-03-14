@@ -395,9 +395,9 @@ const BannerBuilder: React.FC<BannerBuilderProps> = ({ packageId }) => {
     <div className="flex flex-col gap-0 bg-slate-100 min-h-screen">
       {/* 🛠️ ORGANIZED MEGA EDITOR */}
       <div className="w-full bg-white border-b shadow-2xl p-4 sticky top-0 z-[60] overflow-hidden">
-        <div className="max-w-[1800px] mx-auto flex gap-6 h-[290px] overflow-x-auto custom-scrollbar pb-4">
+        <div className="max-w-[1800px] mx-auto flex gap-6 h-[420px] overflow-x-auto custom-scrollbar pb-4">
           {/* SECTION 0: GLOBAL */}
-          <div className="min-w-[200px] flex flex-col gap-2 border-r pr-6 shrink-0">
+          <div className="min-w-[200px] flex flex-col gap-2 border-r pr-6 shrink-0 overflow-y-auto custom-scrollbar">
             <h3 className="text-[10px] font-black text-indigo-600 uppercase mb-2">
               0. Design & Setup
             </h3>
@@ -462,7 +462,7 @@ const BannerBuilder: React.FC<BannerBuilderProps> = ({ packageId }) => {
 
           {/* SECTION 1: HEADER */}
           <div
-            className={`min-w-[260px] flex flex-col gap-1 border-r pr-6 shrink-0 ${!visibleSections.header ? "opacity-40 grayscale" : ""}`}
+            className={`min-w-[260px] flex flex-col gap-1 border-r pr-6 shrink-0 overflow-y-auto custom-scrollbar ${!visibleSections.header ? "opacity-40 grayscale" : ""}`}
           >
             <h3 className="text-[10px] font-black text-blue-600 uppercase mb-1 text-center">
               1. Header
@@ -529,7 +529,7 @@ const BannerBuilder: React.FC<BannerBuilderProps> = ({ packageId }) => {
                 className="w-1/2 h-6"
               />
             </div>
-            <div className="mt-auto">
+            <div className="pt-2">
               <label className="text-[8px] font-black opacity-30 uppercase">
                 Height
               </label>
@@ -546,7 +546,7 @@ const BannerBuilder: React.FC<BannerBuilderProps> = ({ packageId }) => {
 
           {/* SECTION 2: MAIN TITLE */}
           <div
-            className={`min-w-[180px] flex flex-col gap-1 border-r pr-6 shrink-0 ${!visibleSections.titleBox ? "opacity-40 grayscale" : ""}`}
+            className={`min-w-[180px] flex flex-col gap-1 border-r pr-6 shrink-0 overflow-y-auto custom-scrollbar ${!visibleSections.titleBox ? "opacity-40 grayscale" : ""}`}
           >
             <h3 className="text-[10px] font-black text-purple-600 uppercase mb-1 text-center">
               2. Main Title
@@ -588,7 +588,7 @@ const BannerBuilder: React.FC<BannerBuilderProps> = ({ packageId }) => {
                 className="flex-1 h-6 rounded"
               />
             </div>
-            <div className="mt-auto">
+            <div className="pt-2">
               <label className="text-[8px] font-black opacity-30 uppercase">
                 Height
               </label>
@@ -605,7 +605,7 @@ const BannerBuilder: React.FC<BannerBuilderProps> = ({ packageId }) => {
 
           {/* SECTION 3: TRIP 1 */}
           <div
-            className={`min-w-[280px] flex flex-col gap-1 border-r pr-6 shrink-0 bg-slate-50/50 p-2 rounded ${!visibleSections.trip1 ? "opacity-40 grayscale" : ""}`}
+            className={`min-w-[280px] flex flex-col gap-1 border-r pr-6 shrink-0 bg-slate-50/50 p-2 rounded overflow-y-auto custom-scrollbar ${!visibleSections.trip1 ? "opacity-40 grayscale" : ""}`}
           >
             <h3 className="text-[10px] font-black text-green-700 uppercase mb-1 text-center">
               3. Trip 1
@@ -683,7 +683,7 @@ const BannerBuilder: React.FC<BannerBuilderProps> = ({ packageId }) => {
                 className="w-10 p-1 text-[10px] border rounded"
               />
             </div>
-            <div className="mt-auto pt-1">
+            <div className="pt-2">
               <input
                 type="range"
                 min="150"
@@ -697,7 +697,7 @@ const BannerBuilder: React.FC<BannerBuilderProps> = ({ packageId }) => {
 
           {/* SECTION 4: TRIP 2 */}
           <div
-            className={`min-w-[280px] flex flex-col gap-1 border-r pr-6 shrink-0 bg-yellow-50/50 p-2 rounded ${!visibleSections.trip2 ? "opacity-40 grayscale" : ""}`}
+            className={`min-w-[280px] flex flex-col gap-1 border-r pr-6 shrink-0 bg-yellow-50/50 p-2 rounded overflow-y-auto custom-scrollbar ${!visibleSections.trip2 ? "opacity-40 grayscale" : ""}`}
           >
             <h3 className="text-[10px] font-black text-orange-600 uppercase mb-1 text-center">
               4. Trip 2
@@ -775,7 +775,7 @@ const BannerBuilder: React.FC<BannerBuilderProps> = ({ packageId }) => {
                 className="w-10 p-1 text-[10px] border rounded"
               />
             </div>
-            <div className="mt-auto pt-1">
+            <div className="pt-2">
               <input
                 type="range"
                 min="150"
@@ -789,7 +789,7 @@ const BannerBuilder: React.FC<BannerBuilderProps> = ({ packageId }) => {
 
           {/* SECTION 5: BAR */}
           <div
-            className={`min-w-[150px] flex flex-col gap-1 border-r pr-6 shrink-0 ${!visibleSections.highTitle ? "opacity-40 grayscale" : ""}`}
+            className={`min-w-[150px] flex flex-col gap-1 border-r pr-6 shrink-0 overflow-y-auto custom-scrollbar ${!visibleSections.highTitle ? "opacity-40 grayscale" : ""}`}
           >
             <h3 className="text-[10px] font-black text-pink-600 uppercase mb-1 text-center">
               5. Title Bar
@@ -821,7 +821,7 @@ const BannerBuilder: React.FC<BannerBuilderProps> = ({ packageId }) => {
                 className="flex-1 h-6 rounded"
               />
             </div>
-            <div className="mt-auto">
+            <div className="pt-2">
               <label className="text-[8px] font-black opacity-30 uppercase">
                 Height
               </label>
@@ -838,7 +838,7 @@ const BannerBuilder: React.FC<BannerBuilderProps> = ({ packageId }) => {
 
           {/* SECTION 6: GRID */}
           <div
-            className={`min-w-[280px] flex flex-col gap-1 border-r pr-6 shrink-0 ${!visibleSections.highGrid ? "opacity-40 grayscale" : ""}`}
+            className={`min-w-[280px] flex flex-col gap-1 border-r pr-6 shrink-0 overflow-y-auto custom-scrollbar ${!visibleSections.highGrid ? "opacity-40 grayscale" : ""}`}
           >
             <h3 className="text-[10px] font-black text-emerald-600 uppercase mb-1 text-center">
               6. Points Grid
@@ -890,7 +890,7 @@ const BannerBuilder: React.FC<BannerBuilderProps> = ({ packageId }) => {
                 className="w-6 h-6 rounded"
               />
             </div>
-            <div className="mt-auto">
+            <div className="pt-2">
               <label className="text-[8px] font-black opacity-30 uppercase">
                 Height
               </label>
@@ -907,7 +907,7 @@ const BannerBuilder: React.FC<BannerBuilderProps> = ({ packageId }) => {
 
           {/* SECTION 7: BUBBLE */}
           <div
-            className={`min-w-[180px] flex flex-col gap-1 border-r pr-6 shrink-0 ${!visibleSections.reservation ? "opacity-40 grayscale" : ""}`}
+            className={`min-w-[180px] flex flex-col gap-1 border-r pr-6 shrink-0 overflow-y-auto custom-scrollbar ${!visibleSections.reservation ? "opacity-40 grayscale" : ""}`}
           >
             <h3 className="text-[10px] font-black text-orange-500 uppercase mb-1 text-center">
               7. Bubble
@@ -933,7 +933,7 @@ const BannerBuilder: React.FC<BannerBuilderProps> = ({ packageId }) => {
                 className="w-1/2 h-6 rounded"
               />
             </div>
-            <div className="mt-auto">
+            <div className="pt-2">
               <label className="text-[8px] font-black opacity-30 uppercase">
                 Height
               </label>
@@ -950,7 +950,7 @@ const BannerBuilder: React.FC<BannerBuilderProps> = ({ packageId }) => {
 
           {/* SECTION 8: RULES */}
           <div
-            className={`min-w-[220px] flex flex-col gap-1 border-r pr-6 shrink-0 ${!visibleSections.rules ? "opacity-40 grayscale" : ""}`}
+            className={`min-w-[220px] flex flex-col gap-1 border-r pr-6 shrink-0 overflow-y-auto custom-scrollbar ${!visibleSections.rules ? "opacity-40 grayscale" : ""}`}
           >
             <h3 className="text-[10px] font-black text-rose-600 uppercase mb-1 text-center">
               8. Rules
@@ -1004,7 +1004,7 @@ const BannerBuilder: React.FC<BannerBuilderProps> = ({ packageId }) => {
               onChange={(e) => setRuleSize(Number(e.target.value))}
               className="w-full p-1 text-[10px] border rounded mt-1"
             />
-            <div className="mt-auto">
+            <div className="pt-2">
               <label className="text-[8px] font-black opacity-30 uppercase">
                 Height
               </label>
@@ -1021,7 +1021,7 @@ const BannerBuilder: React.FC<BannerBuilderProps> = ({ packageId }) => {
 
           {/* SECTION 9: FOOTER */}
           <div
-            className={`min-w-[480px] flex flex-col gap-1 shrink-0 ${!visibleSections.footer ? "opacity-40 grayscale" : ""}`}
+            className={`min-w-[480px] flex flex-col gap-1 shrink-0 overflow-y-auto custom-scrollbar ${!visibleSections.footer ? "opacity-40 grayscale" : ""}`}
           >
             <h3 className="text-[10px] font-black text-slate-800 uppercase mb-1 text-center">
               9. Footer
@@ -1072,7 +1072,7 @@ const BannerBuilder: React.FC<BannerBuilderProps> = ({ packageId }) => {
                 />
               </div>
             </div>
-            <div className="mt-auto">
+            <div className="pt-2">
               <input
                 type="range"
                 min="200"
@@ -1109,7 +1109,7 @@ const BannerBuilder: React.FC<BannerBuilderProps> = ({ packageId }) => {
             }}
           >
             {/* 1. HEADER */}
-            {visibleSections.header && (
+            {visibleSections.header && (brandName || brandSub || headerImgL || headerImgR) && (
               <div
                 className="w-full shrink-0 relative"
                 style={{
@@ -1125,32 +1125,38 @@ const BannerBuilder: React.FC<BannerBuilderProps> = ({ packageId }) => {
                       height: headerHeight * 0.8 + "px",
                     }}
                   >
-                    <div className="w-full h-full rounded-full border-[6px] border-[#ffff00] bg-white overflow-hidden shadow-xl">
-                      <img
-                        src={headerImgL}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
+                    {headerImgL && (
+                      <div className="w-full h-full rounded-full border-[6px] border-[#ffff00] bg-white overflow-hidden shadow-xl">
+                        <img
+                          src={headerImgL}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    )}
                   </div>
                   <div className="flex flex-col items-center flex-1 text-center px-4">
-                    <h1
-                      className="font-black italic drop-shadow-[4px_4px_0px_#cc0000] leading-none"
-                      style={{
-                        fontSize: `${brandNameSize}px`,
-                        color: brandNameColor,
-                      }}
-                    >
-                      {brandName}
-                    </h1>
-                    <p
-                      className="font-bold bg-[#cc0000] px-8 py-2 rounded-full uppercase tracking-widest mt-2 whitespace-nowrap"
-                      style={{
-                        color: brandSubColor,
-                        fontSize: `${brandSubSize}px`,
-                      }}
-                    >
-                      {brandSub}
-                    </p>
+                    {brandName && (
+                      <h1
+                        className="font-black italic drop-shadow-[4px_4px_0px_#cc0000] leading-none"
+                        style={{
+                          fontSize: `${brandNameSize}px`,
+                          color: brandNameColor,
+                        }}
+                      >
+                        {brandName}
+                      </h1>
+                    )}
+                    {brandSub && (
+                      <p
+                        className="font-bold bg-[#cc0000] px-8 py-2 rounded-full uppercase tracking-widest mt-2 whitespace-nowrap"
+                        style={{
+                          color: brandSubColor,
+                          fontSize: `${brandSubSize}px`,
+                        }}
+                      >
+                        {brandSub}
+                      </p>
+                    )}
                   </div>
                   <div
                     className="shrink-0"
@@ -1159,19 +1165,21 @@ const BannerBuilder: React.FC<BannerBuilderProps> = ({ packageId }) => {
                       height: headerHeight * 0.8 + "px",
                     }}
                   >
-                    <div className="w-full h-full rounded-full border-[6px] border-[#ffff00] bg-white overflow-hidden shadow-xl">
-                      <img
-                        src={headerImgR}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
+                    {headerImgR && (
+                      <div className="w-full h-full rounded-full border-[6px] border-[#ffff00] bg-white overflow-hidden shadow-xl">
+                        <img
+                          src={headerImgR}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
             )}
 
             {/* 2. TITLE */}
-            {visibleSections.titleBox && (
+            {visibleSections.titleBox && (title || titleImg) && (
               <div
                 className="w-full shrink-0 flex items-center justify-center border-y-[4px] border-black relative overflow-hidden"
                 style={{
@@ -1180,23 +1188,27 @@ const BannerBuilder: React.FC<BannerBuilderProps> = ({ packageId }) => {
                   fontFamily: fonts.titleBox,
                 }}
               >
-                <div className="absolute left-10 h-[90%] w-auto z-10 flex items-center">
-                  <img
-                    src={titleImg}
-                    className="h-full w-auto object-contain rounded-xl shadow-lg border-2 border-white/20"
-                  />
-                </div>
-                <h2
-                  className="font-black italic drop-shadow-[8px_8px_0px_#000000] z-0"
-                  style={{ fontSize: `${titleSize}px`, color: titleColor }}
-                >
-                  {title}
-                </h2>
+                {titleImg && (
+                  <div className="absolute left-10 h-[90%] w-auto z-10 flex items-center">
+                    <img
+                      src={titleImg}
+                      className="h-full w-auto object-contain rounded-xl shadow-lg border-2 border-white/20"
+                    />
+                  </div>
+                )}
+                {title && (
+                  <h2
+                    className="font-black italic drop-shadow-[8px_8px_0px_#000000] z-0"
+                    style={{ fontSize: `${titleSize}px`, color: titleColor }}
+                  >
+                    {title}
+                  </h2>
+                )}
               </div>
             )}
 
             {/* 3. TRIP 1 */}
-            {visibleSections.trip1 && (
+            {visibleSections.trip1 && (trip1Label || trip1Details || trip1Price || trainImg) && (
               <div
                 className="w-full shrink-0 px-12 pb-4 pt-1 border-b-[4px] border-green-700 flex items-center gap-10 relative overflow-hidden"
                 style={{
@@ -1205,38 +1217,46 @@ const BannerBuilder: React.FC<BannerBuilderProps> = ({ packageId }) => {
                   fontFamily: fonts.trip1,
                 }}
               >
-                <div
-                  className="bg-[#cc0066] text-white px-8 py-3 rounded-2xl font-black border-2 border-white shrink-0 shadow-lg"
-                  style={{ fontSize: `${trip1LabelSize}px` }}
-                >
-                  {trip1Label}
-                </div>
-                <div
-                  className="flex-1 font-bold leading-[1.15] z-10 whitespace-pre-wrap"
-                  style={{
-                    color: trip1DetailsColor,
-                    fontSize: `${trip1DetailsSize}px`,
-                  }}
-                >
-                  {trip1Details}
-                </div>
-                <div className="bg-[#cc0066] text-white px-10 py-6 rounded-[80px] border-[12px] border-white shadow-2xl flex items-center justify-center shrink-0 min-w-[380px] z-10">
-                  <span
-                    className="font-black"
-                    style={{ fontSize: `${trip1PriceSize}px` }}
+                {trip1Label && (
+                  <div
+                    className="bg-[#cc0066] text-white px-8 py-3 rounded-2xl font-black border-2 border-white shrink-0 shadow-lg"
+                    style={{ fontSize: `${trip1LabelSize}px` }}
                   >
-                    {trip1Price}
-                  </span>
-                </div>
-                <img
-                  src={trainImg}
-                  className="absolute right-[-20px] bottom-[-20px] w-96 opacity-20 grayscale"
-                />
+                    {trip1Label}
+                  </div>
+                )}
+                {trip1Details && (
+                  <div
+                    className="flex-1 font-bold leading-[1.15] z-10 whitespace-pre-wrap"
+                    style={{
+                      color: trip1DetailsColor,
+                      fontSize: `${trip1DetailsSize}px`,
+                    }}
+                  >
+                    {trip1Details}
+                  </div>
+                )}
+                {trip1Price && (
+                  <div className="bg-[#cc0066] text-white px-10 py-6 rounded-[80px] border-[12px] border-white shadow-2xl flex items-center justify-center shrink-0 min-w-[380px] z-10">
+                    <span
+                      className="font-black"
+                      style={{ fontSize: `${trip1PriceSize}px` }}
+                    >
+                      {trip1Price}
+                    </span>
+                  </div>
+                )}
+                {trainImg && (
+                  <img
+                    src={trainImg}
+                    className="absolute right-[-20px] bottom-[-20px] w-96 opacity-20 grayscale"
+                  />
+                )}
               </div>
             )}
 
             {/* 4. TRIP 2 */}
-            {visibleSections.trip2 && (
+            {visibleSections.trip2 && (trip2Label || trip2Details || trip2Price || planeImg) && (
               <div
                 className="w-full shrink-0 px-12 pb-4 pt-1 border-b-[8px] border-rose-700 flex items-center gap-10 relative overflow-hidden"
                 style={{
@@ -1245,171 +1265,186 @@ const BannerBuilder: React.FC<BannerBuilderProps> = ({ packageId }) => {
                   fontFamily: fonts.trip2,
                 }}
               >
-                <div
-                  className="bg-[#cc0066] text-white px-8 py-3 rounded-2xl font-black border-2 border-white shrink-0 shadow-lg"
-                  style={{ fontSize: `${trip2LabelSize}px` }}
-                >
-                  {trip2Label}
-                </div>
-                <div
-                  className="flex-1 font-bold leading-[1.15] z-10 whitespace-pre-wrap"
-                  style={{
-                    color: trip2DetailsColor,
-                    fontSize: `${trip2DetailsSize}px`,
-                  }}
-                >
-                  {trip2Details}
-                </div>
-                <div className="bg-[#cc0066] text-white px-10 py-6 rounded-[80px] border-[12px] border-white shadow-2xl flex items-center justify-center shrink-0 min-w-[380px] z-10">
-                  <span
-                    className="font-black"
-                    style={{ fontSize: `${trip2PriceSize}px` }}
+                {trip2Label && (
+                  <div
+                    className="bg-[#cc0066] text-white px-8 py-3 rounded-2xl font-black border-2 border-white shrink-0 shadow-lg"
+                    style={{ fontSize: `${trip2LabelSize}px` }}
                   >
-                    {trip2Price}
-                  </span>
-                </div>
-                <img
-                  src={planeImg}
-                  className="absolute right-[-20px] top-[-20px] w-96 opacity-20 grayscale"
-                />
+                    {trip2Label}
+                  </div>
+                )}
+                {trip2Details && (
+                  <div
+                    className="flex-1 font-bold leading-[1.15] z-10 whitespace-pre-wrap"
+                    style={{
+                      color: trip2DetailsColor,
+                      fontSize: `${trip2DetailsSize}px`,
+                    }}
+                  >
+                    {trip2Details}
+                  </div>
+                )}
+                {trip2Price && (
+                  <div className="bg-[#cc0066] text-white px-10 py-6 rounded-[80px] border-[12px] border-white shadow-2xl flex items-center justify-center shrink-0 min-w-[380px] z-10">
+                    <span
+                      className="font-black"
+                      style={{ fontSize: `${trip2PriceSize}px` }}
+                    >
+                      {trip2Price}
+                    </span>
+                  </div>
+                )}
+                {planeImg && (
+                  <img
+                    src={planeImg}
+                    className="absolute right-[-20px] top-[-20px] w-96 opacity-20 grayscale"
+                  />
+                )}
               </div>
             )}
 
             {/* MIDDLE AREA */}
-            <div
-              className="flex-grow flex flex-col overflow-hidden p-8"
-              style={{ backgroundColor: globalBg }}
-            >
-              {/* 5. Highlight Bar */}
-              {visibleSections.highTitle && (
+            {((visibleSections.highTitle && highTitle) ||
+              (visibleSections.highGrid && highlights.some((h) => h && h.trim() !== "")) ||
+              (visibleSections.reservation && reservationText) ||
+              (visibleSections.rules && (rules.some((r) => r && r.trim() !== "") || busImg))) && (
                 <div
-                  className="w-full shrink-0 text-center font-black uppercase flex items-center justify-center border-b mb-6 shadow-sm"
-                  style={{
-                    backgroundColor: highTitleBg,
-                    color: highTitleColor,
-                    fontSize: `${highTitleSize}px`,
-                    height: `${highTitleBarHeight}px`,
-                    fontFamily: fonts.highTitle,
-                  }}
+                  className="flex-grow flex flex-col overflow-hidden p-8"
+                  style={{ backgroundColor: globalBg }}
                 >
-                  ✨ {highTitle} ✨
-                </div>
-              )}
+                  {/* 5. Highlight Bar */}
+                  {visibleSections.highTitle && highTitle && (
+                    <div
+                      className="w-full shrink-0 text-center font-black uppercase flex items-center justify-center border-b mb-6 shadow-sm"
+                      style={{
+                        backgroundColor: highTitleBg,
+                        color: highTitleColor,
+                        fontSize: `${highTitleSize}px`,
+                        height: `${highTitleBarHeight}px`,
+                        fontFamily: fonts.highTitle,
+                      }}
+                    >
+                      ✨ {highTitle} ✨
+                    </div>
+                  )}
 
-              {/* 6. Grid / Text Block */}
-              {visibleSections.highGrid && (
-                <div
-                  className={
-                    highDisplayMode === "Grid"
-                      ? "grid grid-cols-3 gap-y-12 gap-x-12 px-12 flex-grow"
-                      : "flex flex-col justify-center px-12 flex-grow"
-                  }
-                  style={{
-                    height: `${highGridHeight}px`,
-                    fontFamily: fonts.highGrid,
-                  }}
-                >
-                  {highDisplayMode === "Grid" ? (
-                    highlights.map((h, i) => (
-                      <div key={i} className="flex items-center gap-4">
-                        <div className="w-14 h-14 flex-shrink-0 bg-[#004d00] rounded-xl border-2 border-yellow-400 flex items-center justify-center shadow-lg">
-                          <span className="text-3xl text-yellow-300">☸</span>
+                  {/* 6. Grid / Text Block */}
+                  {visibleSections.highGrid && (
+                    <div
+                      className={
+                        highDisplayMode === "Grid"
+                          ? "grid grid-cols-3 gap-y-12 gap-x-12 px-12 flex-grow"
+                          : "flex flex-col justify-center px-12 flex-grow"
+                      }
+                      style={{
+                        height: `${highGridHeight}px`,
+                        fontFamily: fonts.highGrid,
+                      }}
+                    >
+                      {highDisplayMode === "Grid" ? (
+                        highlights.map((h, i) => h ? (
+                          <div key={i} className="flex items-center gap-4">
+                            <div className="w-14 h-14 flex-shrink-0 bg-[#004d00] rounded-xl border-2 border-yellow-400 flex items-center justify-center shadow-lg">
+                              <span className="text-3xl text-yellow-300">☸</span>
+                            </div>
+                            <span
+                              className="font-black leading-none tracking-tighter"
+                              style={{
+                                fontSize: `${highSize}px`,
+                                color: highColor,
+                              }}
+                            >
+                              {h}
+                            </span>
+                          </div>
+                        ) : null)
+                      ) : (
+                        <div
+                          className="font-black leading-snug whitespace-pre-wrap w-full text-center"
+                          style={{ fontSize: `${highSize}px`, color: highColor }}
+                        >
+                          {highlights.join("\n")}
                         </div>
-                        <span
-                          className="font-black leading-none tracking-tighter"
+                      )}
+                    </div>
+                  )}
+
+                  {/* 7. Reservation */}
+                  {visibleSections.reservation && reservationText && (
+                    <div
+                      className="flex justify-center shrink-0 my-6"
+                      style={{
+                        height: `${reservationHeight}px`,
+                        fontFamily: fonts.reservation,
+                      }}
+                    >
+                      <div
+                        className="px-14 py-4 rounded-full border-[10px] border-green-900 shadow-xl flex items-center justify-center"
+                        style={{ backgroundColor: reservationBg }}
+                      >
+                        <p
+                          className="font-black text-center leading-tight whitespace-pre-wrap"
                           style={{
-                            fontSize: `${highSize}px`,
-                            color: highColor,
+                            color: reservationColor,
+                            fontSize: `${reservationSize}px`,
                           }}
                         >
-                          {h}
-                        </span>
+                          {reservationText}
+                        </p>
                       </div>
-                    ))
-                  ) : (
+                    </div>
+                  )}
+
+                  {/* 8. Rules Box */}
+                  {visibleSections.rules && (
                     <div
-                      className="font-black leading-snug whitespace-pre-wrap w-full text-center"
-                      style={{ fontSize: `${highSize}px`, color: highColor }}
+                      className="shrink-0 px-12 mb-4"
+                      style={{
+                        height: `${rulesHeight}px`,
+                        fontFamily: fonts.rules,
+                      }}
                     >
-                      {highlights.join("\n")}
+                      <div className="h-full bg-[#004d00] rounded-[60px] border-[12px] border-[#ccff00] p-10 flex justify-between items-center shadow-4xl overflow-hidden">
+                        {ruleDisplayMode === "List" ? (
+                          <div className="flex flex-col gap-6">
+                            {rules.slice(0, 4).map((rule, i) => rule ? (
+                              <div key={i} className="flex gap-6 items-start">
+                                <span className="text-yellow-400 text-3xl mt-1">
+                                  ▶
+                                </span>
+                                <p
+                                  className="text-white font-bold leading-tight"
+                                  style={{ fontSize: `${ruleSize}px` }}
+                                >
+                                  {rule}
+                                </p>
+                              </div>
+                            ) : null)}
+                          </div>
+                        ) : (
+                          <div
+                            className="flex-1 text-white font-bold leading-relaxed whitespace-pre-wrap w-full pr-8"
+                            style={{ fontSize: `${ruleSize}px` }}
+                          >
+                            {rules.join("\n")}
+                          </div>
+                        )}
+                        {busImg && (
+                          <div className="w-[380px] h-[240px] bg-white rounded-[40px] overflow-hidden shadow-2xl border-[10px] border-white ml-10 shrink-0">
+                            <img
+                              src={busImg}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
               )}
 
-              {/* 7. Reservation */}
-              {visibleSections.reservation && (
-                <div
-                  className="flex justify-center shrink-0 my-6"
-                  style={{
-                    height: `${reservationHeight}px`,
-                    fontFamily: fonts.reservation,
-                  }}
-                >
-                  <div
-                    className="px-14 py-4 rounded-full border-[10px] border-green-900 shadow-xl flex items-center justify-center"
-                    style={{ backgroundColor: reservationBg }}
-                  >
-                    <p
-                      className="font-black text-center leading-tight whitespace-pre-wrap"
-                      style={{
-                        color: reservationColor,
-                        fontSize: `${reservationSize}px`,
-                      }}
-                    >
-                      {reservationText}
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {/* 8. Rules Box */}
-              {visibleSections.rules && (
-                <div
-                  className="shrink-0 px-12 mb-4"
-                  style={{
-                    height: `${rulesHeight}px`,
-                    fontFamily: fonts.rules,
-                  }}
-                >
-                  <div className="h-full bg-[#004d00] rounded-[60px] border-[12px] border-[#ccff00] p-10 flex justify-between items-center shadow-4xl overflow-hidden">
-                    {ruleDisplayMode === "List" ? (
-                      <div className="flex flex-col gap-6">
-                        {rules.slice(0, 4).map((rule, i) => (
-                          <div key={i} className="flex gap-6 items-start">
-                            <span className="text-yellow-400 text-3xl mt-1">
-                              ▶
-                            </span>
-                            <p
-                              className="text-white font-bold leading-tight"
-                              style={{ fontSize: `${ruleSize}px` }}
-                            >
-                              {rule}
-                            </p>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div
-                        className="flex-1 text-white font-bold leading-relaxed whitespace-pre-wrap w-full pr-8"
-                        style={{ fontSize: `${ruleSize}px` }}
-                      >
-                        {rules.join("\n")}
-                      </div>
-                    )}
-                    <div className="w-[380px] h-[240px] bg-white rounded-[40px] overflow-hidden shadow-2xl border-[10px] border-white ml-10 shrink-0">
-                      <img
-                        src={busImg}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
             {/* 9. FOOTER */}
-            {visibleSections.footer && (
+            {visibleSections.footer && (disclaimer || sigName || phone1 || email || adminPhoto) && (
               <div
                 className="w-full shrink-0"
                 style={{ backgroundColor: globalBg, fontFamily: fonts.footer }}
@@ -1421,37 +1456,47 @@ const BannerBuilder: React.FC<BannerBuilderProps> = ({ packageId }) => {
                     backgroundColor: "#ffffff",
                   }}
                 >
-                  <div
-                    className="w-[55%] font-bold border-l-[15px] border-blue-600 pl-12 italic text-[#003300] opacity-80 leading-relaxed whitespace-pre-wrap"
-                    style={{ fontSize: `${disclaimerSize}px` }}
-                  >
-                    {disclaimer}
-                  </div>
+                  {disclaimer && (
+                    <div
+                      className="w-[55%] font-bold border-l-[15px] border-blue-600 pl-12 italic text-[#003300] opacity-80 leading-relaxed whitespace-pre-wrap"
+                      style={{ fontSize: `${disclaimerSize}px` }}
+                    >
+                      {disclaimer}
+                    </div>
+                  )}
                   <div className="flex-1 flex flex-col items-end">
                     <div className="bg-white border-[12px] border-indigo-950 rounded-[60px] p-8 flex items-center gap-10 shadow-4xl relative">
                       <div className="flex flex-col items-end">
-                        <span
-                          className="text-indigo-900 font-black italic opacity-60 text-2xl mb-2"
-                          style={{ fontSize: `${sigNameSize}px` }}
-                        >
-                          {sigName}
-                        </span>
-                        <span
-                          className="text-emerald-700 font-black tracking-tighter"
-                          style={{ fontSize: `${phoneSize}px` }}
-                        >
-                          {phone1}
-                        </span>
-                        <p className="text-indigo-600 font-bold mt-2 text-lg lowercase border-b-4 border-indigo-50">
-                          {email}
-                        </p>
+                        {sigName && (
+                          <span
+                            className="text-indigo-900 font-black italic opacity-60 text-2xl mb-2"
+                            style={{ fontSize: `${sigNameSize}px` }}
+                          >
+                            {sigName}
+                          </span>
+                        )}
+                        {phone1 && (
+                          <span
+                            className="text-emerald-700 font-black tracking-tighter"
+                            style={{ fontSize: `${phoneSize}px` }}
+                          >
+                            {phone1}
+                          </span>
+                        )}
+                        {email && (
+                          <p className="text-indigo-600 font-bold mt-2 text-lg lowercase border-b-4 border-indigo-50">
+                            {email}
+                          </p>
+                        )}
                       </div>
-                      <div className="w-[180px] h-[180px] rounded-[50px] overflow-hidden border-[8px] border-indigo-950 shadow-2xl bg-slate-50 shrink-0">
-                        <img
-                          src={adminPhoto}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
+                      {adminPhoto && (
+                        <div className="w-[180px] h-[180px] rounded-[50px] overflow-hidden border-[8px] border-indigo-950 shadow-2xl bg-slate-50 shrink-0">
+                          <img
+                            src={adminPhoto}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
