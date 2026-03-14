@@ -1856,9 +1856,10 @@ const App: React.FC = () => {
 
     try {
       const saved = localStorage.getItem('tripflux_user');
-      return saved ? 'HOME' : 'SIGNUP';
+      // Default to HOME for all users to allow guest browsing
+      return 'HOME';
     } catch (e) {
-      return 'SIGNUP';
+      return 'HOME';
     }
   });
 
