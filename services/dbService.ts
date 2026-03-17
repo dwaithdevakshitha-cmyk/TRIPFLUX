@@ -321,7 +321,7 @@ export const dbService = {
         highlights: row.highlights || [],
         image: row.image,
         transportType: row.transport_type,
-        contactPhone: row.contact_phone || '7036665588',
+        contactPhone: row.contact_phone || '8297788789',
         contactEmail: row.contact_email || 'info@tripfux.com',
         features: row.features || [],
         terms: row.terms || [],
@@ -360,7 +360,7 @@ export const dbService = {
         tour.id, tour.title, tour.category, tour.destination, tour.dates,
         tour.price, tour.priceBasis, tour.priceAdvance || null, tour.duration,
         tour.highlights, tour.image, tour.transportType,
-        '7036665588', 'info@tripfux.com',
+        '8297788789', 'info@tripfux.com',
         tour.features || [], tour.terms || [], JSON.stringify(tour.mediaFiles || []),
         JSON.stringify(tour.itinerary || [])
       ];

@@ -9,20 +9,24 @@ interface TourCardProps {
 const TourCard: React.FC<TourCardProps> = ({ tour, onSelect }) => {
   return (
     <div className="flex flex-col items-center group cursor-pointer" onClick={() => onSelect?.(tour)}>
-      <div className="w-full aspect-[4/3] rounded-2xl overflow-hidden mb-4 shadow-sm border border-slate-100 group-hover:shadow-2xl transition-all duration-700">
+      <div className="w-full aspect-[4/3] rounded-xl sm:rounded-2xl overflow-hidden mb-2 sm:mb-4 shadow-sm border border-slate-100 group-hover:shadow-2xl transition-all duration-700">
         <img
           src={tour.image || `https://images.unsplash.com/photo-1548013146-72479768bada?q=80&w=1776&auto=format&fit=crop`}
           alt={tour.title}
           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000 ease-out"
         />
       </div>
-      <div className="text-center px-2">
-        <h3 className="text-[11px] font-extrabold text-[#0c2d3a] uppercase tracking-wider group-hover:text-indigo-600 transition-colors">
+      <div className="text-center px-1 sm:px-2 w-full">
+        <h3 className="text-[10px] sm:text-[11px] font-extrabold text-[#0c2d3a] uppercase tracking-wider group-hover:text-indigo-600 transition-colors leading-tight">
           {tour.title}
         </h3>
+        {tour.price && (
+          <p className="text-[9px] sm:text-[10px] font-bold text-indigo-600 mt-0.5 sm:mt-1">{tour.price}</p>
+        )}
       </div>
     </div>
   );
 };
 
 export default TourCard;
+

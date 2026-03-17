@@ -161,9 +161,9 @@ const TourDetails: React.FC<TourDetailsProps> = ({ tour, user, onBack, onRequire
     };
 
     return (
-        <div className="animate-in fade-in duration-700 bg-white min-h-screen">
+        <div className="animate-in fade-in duration-700 bg-white min-h-screen pb-24 md:pb-0">
             {/* Hero Section */}
-            <div className="relative h-[40vh] md:h-[60vh] w-full">
+            <div className="relative h-[40vh] sm:h-[50vh] md:h-[60vh] w-full">
                 <img src={tour.image} className="w-full h-full object-cover" alt={tour.title} />
                 <div className="absolute inset-0 bg-black/40 flex flex-col justify-end p-6 md:p-16">
                     <div className="max-w-7xl mx-auto w-full">
@@ -183,7 +183,7 @@ const TourDetails: React.FC<TourDetailsProps> = ({ tour, user, onBack, onRequire
                 </div>
             </div>
 
-            <div className="max-w-7xl mx-auto px-4 md:px-6 py-8 md:py-16 grid grid-cols-1 lg:grid-cols-3 gap-8 md:gap-16">
+            <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 md:py-16 grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-16">
                 {/* Left: Itinerary */}
                 <div className="lg:col-span-2 space-y-12">
                     <div className="flex items-center gap-4 mb-8">
@@ -297,14 +297,14 @@ const TourDetails: React.FC<TourDetailsProps> = ({ tour, user, onBack, onRequire
                     </div>
                 </div>
 
-                {/* Right: Booking & Features */}
-                <div className="space-y-8">
+                {/* Right: Booking & Features - shows first on mobile via order */}
+                <div className="space-y-6 sm:space-y-8 lg:order-last order-first">
                     <div className="sticky top-24 space-y-8">
-                        <div className="bg-[#0c2d3a] text-white rounded-[40px] p-10 shadow-2xl shadow-indigo-900/20">
+                        <div className="bg-[#0c2d3a] text-white rounded-2xl sm:rounded-[40px] p-6 sm:p-10 shadow-2xl shadow-indigo-900/20">
                             <p className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.3em] mb-4">Pricing Details</p>
                             <div className="mb-8">
                                 <span className="text-xs font-bold text-white/50 uppercase">{tour.priceBasis}</span>
-                                <p className="text-5xl font-black tracking-tighter">{tour.price}</p>
+                                <p className="text-3xl sm:text-5xl font-black tracking-tighter">{tour.price}</p>
                             </div>
                             <button
                                 onClick={() => {
@@ -354,7 +354,7 @@ const TourDetails: React.FC<TourDetailsProps> = ({ tour, user, onBack, onRequire
                                     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                                     </svg>
-                                    <span className="text-xs font-bold">7036665588</span>
+                                    <span className="text-xs font-bold">8297788789</span>
                                 </div>
                                 <div className="flex items-center gap-3 text-white/60">
                                     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -365,7 +365,7 @@ const TourDetails: React.FC<TourDetailsProps> = ({ tour, user, onBack, onRequire
                             </div>
                         </div>
 
-                        <div className="bg-slate-50 border border-slate-100 rounded-[40px] p-10 space-y-6">
+                        <div className="bg-slate-50 border border-slate-100 rounded-2xl sm:rounded-[40px] p-6 sm:p-10 space-y-6">
                             <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Package Inclusions</h4>
                             <div className="flex flex-wrap gap-2">
                                 {(tour.features && tour.features.length > 0 ? tour.features : ['Premium Hotels', 'Sightseeing', 'Expert Support', 'Deluxe Coach']).map((f, i) => (

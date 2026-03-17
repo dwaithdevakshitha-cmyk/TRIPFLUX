@@ -1963,7 +1963,7 @@ const App: React.FC = () => {
     window.scrollTo(0, 0);
   };
 
-  const contactPhone = "7036665588";
+  const contactPhone = "8297788789";
   const contactEmails = ["info@tripfux.com", "info@mripl.com"];
 
   // Defined handleAuthSuccess to update the user state and fix the reference error
@@ -2034,7 +2034,7 @@ const App: React.FC = () => {
   const renderHome = () => (
     <div className="animate-in fade-in duration-500">
       {/* Hero Section */}
-      <section className="relative h-[85vh] w-full overflow-hidden">
+      <section className="relative h-[60vh] sm:h-[70vh] md:h-[85vh] w-full overflow-hidden">
         {heroImages.map((img, idx) => (
           <img
             key={idx}
@@ -2045,10 +2045,10 @@ const App: React.FC = () => {
         ))}
         <div className="absolute inset-0 bg-black/30"></div>
 
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0c2d3a] via-[#0c2d3a]/20 to-transparent flex flex-col justify-center items-center text-center px-6">
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0c2d3a] via-[#0c2d3a]/20 to-transparent flex flex-col justify-center items-center text-center px-4 sm:px-6">
           <div className="max-w-4xl space-y-6">
             <span className="text-indigo-400 font-extrabold text-[10px] uppercase tracking-[0.5em] mb-4 block animate-in slide-in-from-top-4 duration-700">EXPERIENCE THE EXTRAORDINARY</span>
-            <h1 className="text-3xl md:text-5xl lg:text-7xl font-black text-white tracking-tighter uppercase leading-[0.9] animate-in slide-in-from-bottom-8 duration-1000">
+            <h1 className="text-2xl sm:text-3xl md:text-5xl lg:text-7xl font-black text-white tracking-tighter uppercase leading-[0.95] animate-in slide-in-from-bottom-8 duration-1000">
               Your Journey, <br className="hidden sm:block" /> Our Intelligence
             </h1>
             <p className="text-white/80 text-sm md:text-lg font-medium max-w-2xl mx-auto animate-in fade-in slide-in-from-bottom-12 duration-1200 delay-300">
@@ -2086,43 +2086,43 @@ const App: React.FC = () => {
 
 
       {/* Temple Specials */}
-      <section className="py-12 px-6 max-w-7xl mx-auto">
-        <div className="text-center mb-10">
-          <h2 className="text-2xl font-black text-[#0c2d3a] uppercase tracking-tighter">Temple Specials</h2>
+      <section className="py-8 sm:py-12 px-4 sm:px-6 max-w-7xl mx-auto">
+        <div className="text-center mb-8">
+          <h2 className="text-xl sm:text-2xl font-black text-[#0c2d3a] uppercase tracking-tighter">Temple Specials</h2>
           <div className="h-0.5 w-16 bg-[#0c2d3a] mx-auto mt-2"></div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 md:gap-10">
           {getToursByCategory('Pilgrimage').slice(0, 3).map(tour => <TourCard key={tour.id} tour={tour} onSelect={handleTourSelect} />)}
         </div>
-        <div className="mt-8 text-center">
+        <div className="mt-6 text-center">
           <button onClick={() => setCurrentView('PILGRIMAGE')} className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest hover:underline">View more »</button>
         </div>
       </section>
 
       {/* International Specials */}
-      <section className="py-12 px-6 max-w-7xl mx-auto">
-        <div className="text-center mb-10">
-          <h2 className="text-2xl font-black text-[#0c2d3a] uppercase tracking-tighter">International Specials</h2>
+      <section className="py-8 sm:py-12 px-4 sm:px-6 max-w-7xl mx-auto">
+        <div className="text-center mb-8">
+          <h2 className="text-xl sm:text-2xl font-black text-[#0c2d3a] uppercase tracking-tighter">International Specials</h2>
           <div className="h-0.5 w-16 bg-[#0c2d3a] mx-auto mt-2"></div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 md:gap-10">
           {getToursByCategory('International').slice(0, 3).map(tour => <TourCard key={tour.id} tour={tour} onSelect={handleTourSelect} />)}
         </div>
-        <div className="mt-8 text-center">
+        <div className="mt-6 text-center">
           <button onClick={() => setCurrentView('INTERNATIONAL')} className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest hover:underline">View more »</button>
         </div>
       </section>
 
       {/* Domestic Specials */}
-      <section className="py-12 px-6 max-w-7xl mx-auto">
-        <div className="text-center mb-10">
-          <h2 className="text-2xl font-black text-[#0c2d3a] uppercase tracking-tighter">Domestic Specials</h2>
+      <section className="py-8 sm:py-12 px-4 sm:px-6 max-w-7xl mx-auto">
+        <div className="text-center mb-8">
+          <h2 className="text-xl sm:text-2xl font-black text-[#0c2d3a] uppercase tracking-tighter">Domestic Specials</h2>
           <div className="h-0.5 w-16 bg-[#0c2d3a] mx-auto mt-2"></div>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-10">
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-10">
           {getToursByCategory('Domestic').slice(0, 3).map(tour => <TourCard key={tour.id} tour={tour} onSelect={handleTourSelect} />)}
         </div>
-        <div className="mt-8 text-center">
+        <div className="mt-6 text-center">
           <button onClick={() => setCurrentView('DOMESTIC')} className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest hover:underline">View more »</button>
         </div>
       </section>
@@ -2130,12 +2130,12 @@ const App: React.FC = () => {
 
       {/* Reviews */}
 
-      <section className="py-20 px-6 max-w-7xl mx-auto">
+      <section className="py-10 sm:py-20 px-4 sm:px-6 max-w-7xl mx-auto pb-24 md:pb-20">
         <div className="text-center mb-12">
           <h2 className="text-2xl font-black text-[#0c2d3a] uppercase tracking-tighter">Customer Reviews</h2>
           <div className="h-0.5 w-16 bg-[#0c2d3a] mx-auto mt-2"></div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-12 text-center">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-12 text-center">
           {[
             { name: "Swarna Rani", text: "We had the most remarkable tour with TripFlux. Everything was just perfect. Every moment was taken care of." },
             { name: "DVS KIRAN", text: "My parents used TripFlux recently. The experience was well organized. Highly recommend for seniors." },
@@ -2156,12 +2156,12 @@ const App: React.FC = () => {
   );
 
   const renderCategoryPage = (title: string, tours: TourPackage[]) => (
-    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 py-16 px-6 max-w-7xl mx-auto min-h-[60vh]">
-      <div className="text-center mb-16 px-4">
-        <h2 className="text-4xl font-extrabold text-[#0c2d3a] tracking-tight mb-4">{title}</h2>
+    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 py-8 sm:py-16 px-4 sm:px-6 max-w-7xl mx-auto min-h-[60vh] pb-24 md:pb-16">
+      <div className="text-center mb-8 sm:mb-16 px-2 sm:px-4">
+        <h2 className="text-2xl sm:text-4xl font-extrabold text-[#0c2d3a] tracking-tight mb-4">{title}</h2>
         <div className="h-1 w-20 bg-indigo-600 mx-auto rounded-full"></div>
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-12">
+      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-x-4 sm:gap-x-8 gap-y-6 sm:gap-y-12">
         {tours.map(tour => <TourCard key={tour.id} tour={tour} onSelect={handleTourSelect} />)}
       </div>
     </div>
@@ -2172,9 +2172,9 @@ const App: React.FC = () => {
       {/* Top Banner and Header - Hidden on SIGNIFICANT pages or if not logged in */}
       {currentView !== 'TOUR_DETAILS' && currentView !== 'SIGNUP' && status !== AppStatus.ADMIN && (
         <>
-          <div className="bg-[#0c2d3a] text-white py-1.5 px-6 flex justify-center items-center text-[10px] font-bold border-b border-white/5 space-x-4">
-            <span className="opacity-80">== WELCOME TO TRIPFLUX ==</span>
-            <span className="opacity-80">CUSTOMER CARE NO : {contactPhone} ==</span>
+          <div className="bg-[#0c2d3a] text-white py-1.5 px-3 sm:px-6 flex justify-center items-center text-[9px] sm:text-[10px] font-bold border-b border-white/5 gap-2 sm:gap-4 overflow-hidden">
+            <span className="opacity-80 truncate">== WELCOME TO TRIPFLUX ==</span>
+            <span className="opacity-80 whitespace-nowrap">📞 {contactPhone}</span>
           </div>
 
           <Header
@@ -2214,8 +2214,8 @@ const App: React.FC = () => {
             {currentView === 'CONTACT' && <ContactUs />}
             {currentView === 'SIGNUP' && <SignupPage onBack={() => setCurrentView('HOME')} onAuthSuccess={handleAuthSuccess} />}
 
-            <footer className="bg-[#0c2d3a] text-white pt-16 pb-12 px-6 border-t border-white/5 mt-12">
-              <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-12">
+            <footer className="bg-[#0c2d3a] text-white pt-10 sm:pt-16 pb-24 md:pb-12 px-4 sm:px-6 border-t border-white/5 mt-8 sm:mt-12">
+              <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8 sm:gap-12">
                 <div>
                   <h4 className="text-[11px] font-extrabold uppercase tracking-widest mb-6 border-b border-white/10 pb-2">About TRIPFLUX</h4>
                   <p className="text-[10px] text-white/50 leading-relaxed font-medium">
@@ -2289,7 +2289,7 @@ const App: React.FC = () => {
       )}
 
       <AuthModal isOpen={false} onClose={() => { }} onAuthSuccess={handleAuthSuccess} />
-      <MobileNav onHome={() => setCurrentView('HOME')} onAdminClick={() => { window.location.hash = 'admin'; setStatus(AppStatus.ADMIN_LOGIN); }} />
+      <MobileNav onHome={() => setCurrentView('HOME')} onAdminClick={() => { window.location.hash = 'admin'; setStatus(AppStatus.ADMIN_LOGIN); }} currentView={currentView} onViewChange={(view) => { setCurrentView(view as any); window.scrollTo(0, 0); }} />
     </div>
   );
 };

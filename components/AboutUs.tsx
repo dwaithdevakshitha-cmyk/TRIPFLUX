@@ -3,7 +3,7 @@ import React from 'react';
 
 const AboutUs: React.FC = () => {
     return (
-        <div className="animate-in fade-in duration-700 bg-white min-h-screen py-20 px-6">
+        <div className="animate-in fade-in duration-700 bg-white min-h-screen py-12 sm:py-20 px-4 sm:px-6 pb-24 md:pb-20">
             <div className="max-w-4xl mx-auto space-y-24 text-center">
 
                 {/* Intro Section */}
@@ -40,7 +40,7 @@ const AboutUs: React.FC = () => {
                 </section>
 
                 {/* Detailed About Section */}
-                <section className="space-y-12 text-left bg-slate-50 p-12 rounded-[40px] border border-slate-100">
+                <section className="space-y-6 sm:space-y-12 text-left bg-slate-50 p-6 sm:p-12 rounded-2xl sm:rounded-[40px] border border-slate-100">
                     <div className="space-y-4">
                         <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Our Heritage</h4>
                         <p className="text-[11px] text-slate-600 leading-relaxed">
@@ -68,8 +68,8 @@ const AboutUs: React.FC = () => {
                 </section>
 
                 {/* Stats Section */}
-                <section className="py-16 px-6 bg-[#0c2d3a] rounded-[40px] text-white">
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-12">
+                <section className="py-10 sm:py-16 px-4 sm:px-6 bg-[#0c2d3a] rounded-2xl sm:rounded-[40px] text-white">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-12">
                         {[
                             { label: 'Global Destinations', value: '50+' },
                             { label: 'Happy Travelers', value: '12,000+' },
