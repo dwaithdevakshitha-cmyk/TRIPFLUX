@@ -86,6 +86,7 @@ const BannerBuilder: React.FC<BannerBuilderProps> = ({ packageId }) => {
   );
   const [brandSubSize, setBrandSubSize] = useState(24);
   const [brandSubColor, setBrandSubColor] = useState("#ffff00");
+  const [headerBgColor, setHeaderBgColor] = useState("#0088cc");
   const [headerImgL, setHeaderImgL] = useState(
     "https://img.freepik.com/free-photo/lord-shiva-statue-himachal-pradesh-india_53876-14187.jpg",
   );
@@ -194,24 +195,26 @@ const BannerBuilder: React.FC<BannerBuilderProps> = ({ packageId }) => {
   const [ruleDisplayMode, setRuleDisplayMode] = useState<"List" | "Text">(
     "List",
   );
+  const [ruleBg, setRuleBg] = useState("#004d00");
+  const [ruleColor, setRuleColor] = useState("#ffffff");
 
-  // --- 9. FOOTER ---
-  const [footerBarHeight, setFooterBarHeight] = useState(80);
+  const [footerBarHeight, setFooterBarHeight] = useState(120);
   const [footerContactHeight, setFooterContactHeight] = useState(264);
-  const [transportDetails, setTransportDetails] = useState(
-    "బస్ 2x2 ఏసి పుష్ బ్యాక్",
-  );
-  const [transportDetailsSize, setTransportDetailsSize] = useState(30);
-  const [foodDetails, setFoodDetails] = useState(
-    "రుచికరమైన భోజనం (నెల్లూరు వారిచే)",
-  );
-  const [foodDetailsSize, setFoodDetailsSize] = useState(30);
+  const [footerQuestion, setFooterQuestion] = useState("మా ప్రత్యేకతలు");
+  const [footerQuestionSize, setFooterQuestionSize] = useState(24);
+  const [footerPoints, setFooterPoints] = useState<string[]>([
+    "ఏసి రూమ్ కి ఇద్దరు", "బస్ 2x2 ఏసి పుష్ బ్యాక్",
+    "అనుభవజ్ఞులైన గైడ్లు", "రుచికరమైన భోజనం"
+  ]);
+  const [footerPointsSize, setFooterPointsSize] = useState(32);
   const [featureBg, setFeatureBg] = useState("#cc0099");
 
   const [disclaimer, setDisclaimer] = useState(
     "ఎటువంటి కారణం లేకుండా బ్రోచర్ లో ప్రచారం చేయబడిన ఏదైనా పర్యటనలను మార్చడానికి, సవరించడానికి, వాయిదా వేయడానికి లేదా రద్దు చేయడానికి వాసుదేవ టూర్స్ వారికి సంపూర్ణ హక్కును కలిగివుంది.",
   );
   const [disclaimerSize, setDisclaimerSize] = useState(20);
+  const [contactBg, setContactBg] = useState("#ffffff");
+  const [gamanikaColor, setGamanikaColor] = useState("#003300");
   const [sigName, setSigName] = useState("మీ... చమర్తి రెడ్డియ్య రాజు");
   const [sigNameSize, setSigNameSize] = useState(24);
   const [phone1, setPhone1] = useState("9825219078");
@@ -580,12 +583,21 @@ const BannerBuilder: React.FC<BannerBuilderProps> = ({ packageId }) => {
               </label>
               <input
                 type="range"
-                min="150"
-                max="400"
+                min="100"
+                max="800"
                 value={headerHeight}
                 onChange={(e) => setHeaderHeight(Number(e.target.value))}
                 className="w-full h-3"
               />
+              <div className="flex gap-2 items-center mt-1">
+                <label className="text-[7px] font-black opacity-30 uppercase">Header BG</label>
+                <input
+                  type="color"
+                  value={headerBgColor}
+                  onChange={(e) => setHeaderBgColor(e.target.value)}
+                  className="flex-1 h-5 rounded cursor-pointer"
+                />
+              </div>
             </div>
           </div>
 
@@ -639,8 +651,8 @@ const BannerBuilder: React.FC<BannerBuilderProps> = ({ packageId }) => {
               </label>
               <input
                 type="range"
-                min="80"
-                max="300"
+                min="50"
+                max="600"
                 value={titleBoxHeight}
                 onChange={(e) => setTitleBoxHeight(Number(e.target.value))}
                 className="w-full h-3"
@@ -731,8 +743,8 @@ const BannerBuilder: React.FC<BannerBuilderProps> = ({ packageId }) => {
             <div className="pt-2">
               <input
                 type="range"
-                min="150"
-                max="400"
+                min="50"
+                max="800"
                 value={trip1Height}
                 onChange={(e) => setTrip1Height(Number(e.target.value))}
                 className="w-full h-3"
@@ -823,8 +835,8 @@ const BannerBuilder: React.FC<BannerBuilderProps> = ({ packageId }) => {
             <div className="pt-2">
               <input
                 type="range"
-                min="150"
-                max="400"
+                min="50"
+                max="800"
                 value={trip2Height}
                 onChange={(e) => setTrip2Height(Number(e.target.value))}
                 className="w-full h-3"
@@ -872,8 +884,8 @@ const BannerBuilder: React.FC<BannerBuilderProps> = ({ packageId }) => {
               </label>
               <input
                 type="range"
-                min="40"
-                max="150"
+                min="30"
+                max="400"
                 value={highTitleBarHeight}
                 onChange={(e) => setHighTitleBarHeight(Number(e.target.value))}
                 className="w-full h-3"
@@ -942,7 +954,7 @@ const BannerBuilder: React.FC<BannerBuilderProps> = ({ packageId }) => {
               <input
                 type="range"
                 min="100"
-                max="500"
+                max="1000"
                 value={highGridHeight}
                 onChange={(e) => setHighGridHeight(Number(e.target.value))}
                 className="w-full h-3"
@@ -984,8 +996,8 @@ const BannerBuilder: React.FC<BannerBuilderProps> = ({ packageId }) => {
               </label>
               <input
                 type="range"
-                min="60"
-                max="250"
+                min="50"
+                max="600"
                 value={reservationHeight}
                 onChange={(e) => setReservationHeight(Number(e.target.value))}
                 className="w-full h-3"
@@ -1043,20 +1055,36 @@ const BannerBuilder: React.FC<BannerBuilderProps> = ({ packageId }) => {
                 ))}
               </div>
             )}
-            <input
-              type="number"
-              value={ruleSize}
-              onChange={(e) => setRuleSize(Number(e.target.value))}
-              className="w-full p-1 text-[10px] border rounded mt-1"
-            />
+            <div className="flex gap-2 items-center mt-1">
+              <input
+                type="number"
+                value={ruleSize}
+                onChange={(e) => setRuleSize(Number(e.target.value))}
+                className="w-12 p-1 text-[10px] border rounded"
+              />
+              <input
+                type="color"
+                value={ruleBg}
+                onChange={(e) => setRuleBg(e.target.value)}
+                className="w-6 h-6 rounded cursor-pointer"
+                title="Box BG Color"
+              />
+              <input
+                type="color"
+                value={ruleColor}
+                onChange={(e) => setRuleColor(e.target.value)}
+                className="w-6 h-6 rounded cursor-pointer"
+                title="Text Color"
+              />
+            </div>
             <div className="pt-2">
               <label className="text-[8px] font-black opacity-30 uppercase">
                 Height
               </label>
               <input
                 type="range"
-                min="150"
-                max="500"
+                min="100"
+                max="1000"
                 value={rulesHeight}
                 onChange={(e) => setRulesHeight(Number(e.target.value))}
                 className="w-full h-3"
@@ -1074,26 +1102,61 @@ const BannerBuilder: React.FC<BannerBuilderProps> = ({ packageId }) => {
             <VisibilityToggle section="footer" label="Footer" />
             {renderFontSelector("footer")}
             {/* 9. FOOTER FEATURES */}
-            <div className="flex gap-2 p-2 bg-slate-50 rounded border mb-2">
-              <div className="flex-1">
-                <label className="text-[7px] font-black opacity-30 uppercase block">Transport</label>
-                <input
-                  className="w-full p-1 text-[10px] border rounded"
-                  value={transportDetails}
-                  onChange={(e) => setTransportDetails(e.target.value)}
-                />
+            <div className="p-2 bg-slate-50 rounded border mb-2">
+              <div className="flex justify-between items-center mb-1">
+                <label className="text-[7px] font-black opacity-30 uppercase">Question</label>
+                <div className="flex gap-2 items-center">
+                  <label className="text-[7px] font-black opacity-30 uppercase">Size</label>
+                  <input
+                    type="number"
+                    value={footerQuestionSize}
+                    onChange={(e) => setFooterQuestionSize(Number(e.target.value))}
+                    className="w-10 p-1 text-[8px] border rounded"
+                  />
+                  <label className="text-[7px] font-black opacity-30 uppercase">BG</label>
+                  <input
+                    type="color"
+                    value={featureBg}
+                    onChange={(e) => setFeatureBg(e.target.value)}
+                    className="w-5 h-5 rounded cursor-pointer"
+                  />
+                </div>
               </div>
-              <div className="flex-1">
-                <label className="text-[7px] font-black opacity-30 uppercase block">Food</label>
-                <input
-                  className="w-full p-1 text-[10px] border rounded"
-                  value={foodDetails}
-                  onChange={(e) => setFoodDetails(e.target.value)}
-                />
+              <input
+                className="w-full p-1 text-[10px] border rounded mb-2"
+                value={footerQuestion}
+                onChange={(e) => setFooterQuestion(e.target.value)}
+              />
+              <div className="flex justify-between items-center mb-1">
+                <label className="text-[7px] font-black opacity-30 uppercase">Grid Points</label>
+                <div className="flex gap-2 items-center">
+                  <label className="text-[7px] font-black opacity-30 uppercase">Size</label>
+                  <input
+                    type="number"
+                    value={footerPointsSize}
+                    onChange={(e) => setFooterPointsSize(Number(e.target.value))}
+                    className="w-10 p-1 text-[8px] border rounded"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-1">
+                {footerPoints.map((pt, idx) => (
+                  <input
+                    key={idx}
+                    className="p-1 text-[9px] border rounded"
+                    value={pt}
+                    onChange={(e) => {
+                      const newPts = [...footerPoints];
+                      newPts[idx] = e.target.value;
+                      setFooterPoints(newPts);
+                    }}
+                    placeholder={`Point ${idx + 1}`}
+                  />
+                ))}
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4 h-[120px] overflow-y-auto custom-scrollbar pr-2">
+            <div className="grid grid-cols-2 gap-4 mt-2 pr-2 pb-2">
               <div className="space-y-1">
                 <div className="p-1 bg-slate-100 rounded border">
                   <label className="text-[8px] font-black uppercase block mb-1">
@@ -1135,13 +1198,46 @@ const BannerBuilder: React.FC<BannerBuilderProps> = ({ packageId }) => {
                   value={disclaimer}
                   onChange={(e) => setDisclaimer(e.target.value)}
                 />
+                <div className="flex gap-2 items-center mt-1">
+                  <label className="text-[7px] font-black opacity-30 uppercase">Size</label>
+                  <input
+                    type="number"
+                    value={disclaimerSize}
+                    onChange={(e) => setDisclaimerSize(Number(e.target.value))}
+                    className="w-10 p-1 text-[10px] border rounded"
+                  />
+                  <label className="text-[7px] font-black opacity-30 uppercase">BG</label>
+                  <input
+                    type="color"
+                    value={contactBg}
+                    onChange={(e) => setContactBg(e.target.value)}
+                    className="w-5 h-5 rounded cursor-pointer"
+                  />
+                  <label className="text-[7px] font-black opacity-30 uppercase">Text</label>
+                  <input
+                    type="color"
+                    value={gamanikaColor}
+                    onChange={(e) => setGamanikaColor(e.target.value)}
+                    className="w-5 h-5 rounded cursor-pointer"
+                  />
+                </div>
               </div>
             </div>
             <div className="pt-2">
+              <label className="text-[8px] font-black opacity-30 uppercase block">Highlights Bar Height</label>
               <input
                 type="range"
-                min="200"
-                max="400"
+                min="50"
+                max="500"
+                value={footerBarHeight}
+                onChange={(e) => setFooterBarHeight(Number(e.target.value))}
+                className="w-full h-3 mb-2"
+              />
+              <label className="text-[8px] font-black opacity-30 uppercase block">Contact Box Height</label>
+              <input
+                type="range"
+                min="80"
+                max="800"
                 value={footerContactHeight}
                 onChange={(e) => setFooterContactHeight(Number(e.target.value))}
                 className="w-full h-3"
@@ -1182,7 +1278,12 @@ const BannerBuilder: React.FC<BannerBuilderProps> = ({ packageId }) => {
                   fontFamily: fonts.header,
                 }}
               >
-                <div className="absolute inset-x-0 top-0 h-[85%] bg-gradient-to-b from-[#0088cc] to-[#0055aa] rounded-b-[120px] border-b-[8px] border-[#ffff00] flex items-center justify-between px-16 z-10 overflow-hidden">
+                <div className="absolute inset-x-0 top-0 h-[85%] rounded-b-[120px] border-b-[8px] border-[#ffff00] flex items-center justify-between px-16 z-10 overflow-hidden"
+                  style={{
+                    backgroundColor: headerBgColor,
+                    backgroundImage: `linear-gradient(to bottom, ${headerBgColor}, ${headerBgColor}dd)`
+                  }}
+                >
                   {/* Decorative Cloud Design - Top Left */}
                   <div className="absolute -top-12 -left-12 w-80 h-48 z-0 pointer-events-none">
                     <svg viewBox="0 0 200 100" className="text-yellow-400 opacity-30 absolute inset-0 scale-110">
@@ -1296,12 +1397,15 @@ const BannerBuilder: React.FC<BannerBuilderProps> = ({ packageId }) => {
                 )}
                 {title && (
                   <h2
-                    className="italic drop-shadow-[8px_8px_0px_#000000] z-0"
+                    className="italic z-0"
                     style={{ 
                       fontSize: `${titleSize}px`, 
                       color: titleColor,
                       fontWeight: sectionBold.titleBox ? '900' : 'normal',
                       textAlign: sectionAlign.titleBox,
+                      textShadow: `8px 8px 0px #000000, 10px 10px 25px rgba(0,0,0,0.5)`,
+                      lineHeight: '0.9',
+                      letterSpacing: '-2px'
                     }}
                   >
                     {title}
@@ -1433,151 +1537,165 @@ const BannerBuilder: React.FC<BannerBuilderProps> = ({ packageId }) => {
                   className="flex-grow flex flex-col justify-between overflow-hidden p-8"
                   style={{ backgroundColor: globalBg }}
                 >
-                  {/* 5. Highlight Bar */}
-                  {visibleSections.highTitle && highTitle && (
-                    <div
-                      className="w-full shrink-0 uppercase flex items-center justify-center border-b mb-6 shadow-sm z-20"
-                      style={{
-                        backgroundColor: highTitleBg,
-                        color: highTitleColor,
-                        fontSize: `${highTitleSize}px`,
-                        height: `${highTitleBarHeight}px`,
-                        fontFamily: fonts.highTitle,
-                        fontWeight: sectionBold.highTitle ? '900' : 'normal',
-                        textAlign: sectionAlign.highTitle,
-                        borderRadius: '40px',
-                        width: 'fit-content',
-                        margin: '0 auto 24px',
-                        padding: '0 60px',
-                        border: '4px solid #ffffff33'
-                      }}
-                    >
-                      {highTitle}
-                    </div>
-                  )}
-
-                  {/* 6. Grid / Text Block */}
-                  {visibleSections.highGrid && (
-                    <div
-                      className="flex-grow p-10 rounded-[40px] border-[5px] border-amber-800/20 shadow-inner relative"
-                      style={{ 
-                        backgroundColor: '#fdf6e3',
-                        minHeight: `${highGridHeight}px`,
-                        fontFamily: fonts.highGrid,
-                      }}
-                    >
-                      {highDisplayMode === "Grid" ? (
-                      <div className={`grid gap-x-12 gap-y-4 h-full ${highlights.filter(h => h && h.trim() !== "").length === 1 ? 'grid-cols-1 content-center' : 'grid-cols-2'}`}>
-                          {highlights.map((h, i) => h ? (
-                            <div key={i} className={`flex items-baseline gap-2 ${sectionAlign.highGrid === 'center' ? 'justify-center text-center' : sectionAlign.highGrid === 'right' ? 'justify-end text-right' : 'justify-start text-left'}`}>
-                              <span
-                                className="leading-tight whitespace-nowrap"
-                                style={{
-                                  fontSize: `${highSize}px`,
-                                  color: highColor,
-                                  fontWeight: sectionBold.highGrid ? '900' : 'bold',
-                                }}
-                              >
-                                {h}
-                              </span>
-                            </div>
-                          ) : null)}
-                        </div>
-                      ) : (
+                  {/* 5 & 6 COMBINED: Title Bar and Grid Block */}
+                  {((visibleSections.highTitle && highTitle) || (visibleSections.highGrid && highlights.some((h) => h && h.trim() !== ""))) && (
+                    <div className="flex flex-col items-center relative w-full mb-2">
+                      {/* 5. Highlight Bar */}
+                      {visibleSections.highTitle && highTitle && (
                         <div
-                          className="leading-snug whitespace-pre-wrap w-full"
-                          style={{ 
-                            fontSize: `${highSize}px`, 
-                            color: highColor,
-                            fontWeight: sectionBold.highGrid ? '900' : 'normal',
-                            textAlign: sectionAlign.highGrid,
+                          className="shrink-0 uppercase flex items-center justify-center border-b shadow-sm z-20 relative"
+                          style={{
+                            backgroundColor: highTitleBg,
+                            color: highTitleColor,
+                            fontSize: `${highTitleSize}px`,
+                            minHeight: `${highTitleBarHeight}px`,
+                            fontFamily: fonts.highTitle,
+                            fontWeight: sectionBold.highTitle ? '900' : 'normal',
+                            textAlign: sectionAlign.highTitle,
+                            borderRadius: '40px',
+                            width: 'fit-content',
+                            margin: visibleSections.highGrid ? '0 auto -35px' : '0 auto 24px',
+                            padding: '0 60px',
+                            border: '4px solid #ffffff33'
                           }}
                         >
-                          {highlights.join("\n")}
+                          {highTitle}
+                        </div>
+                      )}
+
+                      {/* 6. Grid / Text Block */}
+                      {visibleSections.highGrid && (
+                        <div
+                          className="w-full flex-grow p-10 rounded-[40px] border-[5px] border-amber-800/20 shadow-inner relative z-10"
+                          style={{ 
+                            backgroundColor: '#fdf6e3',
+                            minHeight: `${highGridHeight}px`,
+                            fontFamily: fonts.highGrid,
+                            paddingTop: visibleSections.highTitle && highTitle ? '60px' : '40px'
+                          }}
+                        >
+                          {highDisplayMode === "Grid" ? (
+                          <div className={`grid gap-x-12 gap-y-4 h-full ${highlights.filter(h => h && h.trim() !== "").length === 1 ? 'grid-cols-1 content-center' : 'grid-cols-2'}`}>
+                              {highlights.map((h, i) => h ? (
+                                <div key={i} className={`flex items-baseline gap-2 ${sectionAlign.highGrid === 'center' ? 'justify-center text-center' : sectionAlign.highGrid === 'right' ? 'justify-end text-right' : 'justify-start text-left'}`}>
+                                  <span
+                                    className="leading-tight break-words"
+                                    style={{
+                                      fontSize: `${highSize}px`,
+                                      color: highColor,
+                                      fontWeight: sectionBold.highGrid ? '900' : 'bold',
+                                    }}
+                                  >
+                                    {h}
+                                  </span>
+                                </div>
+                              ) : null)}
+                            </div>
+                          ) : (
+                            <div
+                              className="leading-snug whitespace-pre-wrap w-full"
+                              style={{ 
+                                fontSize: `${highSize}px`, 
+                                color: highColor,
+                                fontWeight: sectionBold.highGrid ? '900' : 'normal',
+                                textAlign: sectionAlign.highGrid,
+                              }}
+                            >
+                              {highlights.join("\n")}
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
                   )}
 
-                  {/* 7. Reservation */}
-                  {visibleSections.reservation && reservationText && (
-                    <div
-                      className="flex justify-center shrink-0 my-6 flex-grow items-center"
-                      style={{
-                        minHeight: `${reservationHeight}px`,
-                        fontFamily: fonts.reservation,
-                      }}
-                    >
-                      <div
-                        className="px-14 py-4 rounded-full border-[10px] border-green-900 shadow-xl flex items-center justify-center"
-                        style={{ backgroundColor: reservationBg }}
-                      >
-                        <p
-                          className="leading-tight whitespace-pre-wrap"
+                  {/* 7 & 8 COMBINED: Reservation and Rules Box */}
+                  {((visibleSections.reservation && reservationText) || (visibleSections.rules && (rules.some(r => r && r.trim() !== "") || busImg))) && (
+                    <div className="shrink-0 px-12 mb-4 flex-grow flex flex-col items-center relative w-full pt-4">
+                      {/* 7. Reservation Bubble */}
+                      {visibleSections.reservation && reservationText && (
+                        <div
+                          className="flex justify-center shrink-0 z-20 relative w-full"
                           style={{
-                            color: reservationColor,
-                            fontSize: `${reservationSize}px`,
-                            fontWeight: sectionBold.reservation ? '900' : 'normal',
-                            textAlign: sectionAlign.reservation,
+                            minHeight: visibleSections.rules ? 'auto' : `${reservationHeight}px`,
+                            fontFamily: fonts.reservation,
+                            marginBottom: visibleSections.rules ? '-45px' : '24px'
                           }}
                         >
-                          {reservationText}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* 8. Rules Box */}
-                  {visibleSections.rules && (
-                    <div
-                      className="shrink-0 px-12 mb-4 flex-grow"
-                      style={{
-                        minHeight: `${rulesHeight}px`,
-                        fontFamily: fonts.rules,
-                      }}
-                    >
-                      <div className="h-full bg-[#004d00] rounded-[60px] border-[12px] border-[#ccff00] p-10 flex justify-between items-center shadow-4xl overflow-hidden">
-                        {ruleDisplayMode === "List" ? (
-                          <div className={`flex flex-col gap-6 h-full ${rules.filter(r => r && r.trim() !== "").length === 1 ? 'justify-center' : 'justify-start'}`}>
-                            {rules.slice(0, 4).map((rule, i) => rule ? (
-                              <div key={i} className="flex gap-6 items-start">
-                                <span className="text-yellow-400 text-3xl mt-1">
-                                  ▶
-                                </span>
-                                <p
-                                  className="text-white leading-tight"
-                                  style={{ 
-                                    fontSize: `${ruleSize}px`,
-                                    fontWeight: sectionBold.rules ? '900' : 'normal',
-                                    textAlign: sectionAlign.rules,
-                                  }}
-                                >
-                                  {rule}
-                                </p>
-                              </div>
-                            ) : null)}
-                          </div>
-                        ) : (
                           <div
-                            className="flex-1 text-white leading-relaxed whitespace-pre-wrap w-full pr-8"
-                            style={{ 
-                              fontSize: `${ruleSize}px`,
-                              fontWeight: sectionBold.rules ? '900' : 'normal',
-                              textAlign: sectionAlign.rules,
-                            }}
+                            className="px-14 py-4 rounded-full border-[10px] border-green-900 shadow-xl inline-flex items-center justify-center text-center"
+                            style={{ backgroundColor: reservationBg }}
                           >
-                            {rules.join("\n")}
+                            <p
+                              className="leading-tight whitespace-pre-wrap"
+                              style={{
+                                color: reservationColor,
+                                fontSize: `${reservationSize}px`,
+                                fontWeight: sectionBold.reservation ? '900' : 'normal',
+                                textAlign: sectionAlign.reservation,
+                              }}
+                            >
+                              {reservationText}
+                            </p>
                           </div>
-                        )}
-                        {busImg && (
-                          <div className="w-[380px] h-[240px] bg-white rounded-[40px] overflow-hidden shadow-2xl border-[10px] border-white ml-10 shrink-0">
-                            <img
-                              src={busImg}
-                              className="w-full h-full object-cover"
-                            />
+                        </div>
+                      )}
+
+                      {/* 8. Rules Box */}
+                      {visibleSections.rules && (
+                        <div
+                          className="w-full flex-grow relative z-10"
+                          style={{
+                            minHeight: `${rulesHeight}px`,
+                            fontFamily: fonts.rules,
+                          }}
+                        >
+                          <div className={`h-full rounded-[60px] border-[12px] border-[#ccff00] p-10 ${visibleSections.reservation && reservationText ? 'pt-16 pb-12' : ''} flex justify-between items-center shadow-4xl overflow-hidden`} style={{ backgroundColor: ruleBg }}>
+                            {ruleDisplayMode === "List" ? (
+                              <div className={`flex flex-col gap-6 h-full ${rules.filter(r => r && r.trim() !== "").length === 1 ? 'justify-center' : 'justify-start'}`}>
+                                {rules.slice(0, 4).map((rule, i) => rule ? (
+                                  <div key={i} className="flex gap-6 items-start">
+                                    <span className="text-yellow-400 text-3xl mt-1">
+                                      ▶
+                                    </span>
+                                    <p
+                                      className="leading-tight"
+                                      style={{ 
+                                        color: ruleColor,
+                                        fontSize: `${ruleSize}px`,
+                                        fontWeight: sectionBold.rules ? '900' : 'normal',
+                                        textAlign: sectionAlign.rules,
+                                      }}
+                                    >
+                                      {rule}
+                                    </p>
+                                  </div>
+                                ) : null)}
+                              </div>
+                            ) : (
+                              <div
+                                className="flex-1 leading-relaxed whitespace-pre-wrap w-full pr-8"
+                                style={{ 
+                                  color: ruleColor,
+                                  fontSize: `${ruleSize}px`,
+                                  fontWeight: sectionBold.rules ? '900' : 'normal',
+                                  textAlign: sectionAlign.rules,
+                                }}
+                              >
+                                {rules.join("\n")}
+                              </div>
+                            )}
+                            {busImg && (
+                              <div className="w-[380px] h-[240px] bg-white rounded-[40px] overflow-hidden shadow-2xl border-[10px] border-white ml-10 shrink-0">
+                                <img
+                                  src={busImg}
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                            )}
                           </div>
-                        )}
-                      </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -1590,22 +1708,26 @@ const BannerBuilder: React.FC<BannerBuilderProps> = ({ packageId }) => {
                 style={{ backgroundColor: globalBg, fontFamily: fonts.footer }}
               >
                 <div
-                  className="px-10 flex items-center justify-center gap-10 border-b-8 border-indigo-900"
+                  className="px-10 flex items-center justify-between border-b-8 border-indigo-900 overflow-hidden"
                   style={{
-                    height: `${footerBarHeight}px`,
                     backgroundColor: featureBg,
+                    minHeight: `${footerBarHeight}px`,
                     fontWeight: sectionBold.footer ? '900' : 'normal',
-                    textAlign: 'center',
                   }}
                 >
-                  <div className="flex items-center gap-4">
-                    <span className="text-yellow-400 text-2xl">🚌</span>
-                    <span style={{ fontSize: `${transportDetailsSize}px`, color: '#ffffff' }}>{transportDetails}</span>
+                  <div className="bg-white/20 px-8 py-2 rounded-full border-2 border-white/30 shadow-sm flex-none min-w-max mr-8 z-10">
+                    <span 
+                      className="text-white uppercase tracking-widest font-black whitespace-nowrap"
+                      style={{ fontSize: `${footerQuestionSize}px` }}
+                    >✨ {footerQuestion} ✨</span>
                   </div>
-                  <div className="h-8 w-1 bg-white/30 rounded-full" />
-                  <div className="flex items-center gap-4">
-                    <span className="text-yellow-400 text-2xl">🍛</span>
-                    <span style={{ fontSize: `${foodDetailsSize}px`, color: '#ffffff' }}>{foodDetails}</span>
+                  <div className="flex-1 grid grid-cols-2 gap-x-6 gap-y-2">
+                    {footerPoints.map((pt, idx) => pt && (
+                      <div key={idx} className="flex items-center gap-3 text-white justify-start">
+                        <span className="text-yellow-400 text-3xl shrink-0">☸</span>
+                        <span className="leading-tight break-words" style={{ fontSize: `${footerPointsSize}px` }}>{pt}</span>
+                      </div>
+                    ))}
                   </div>
                 </div>
 
@@ -1613,13 +1735,14 @@ const BannerBuilder: React.FC<BannerBuilderProps> = ({ packageId }) => {
                   className="p-10 flex items-center justify-between shadow-2xl overflow-hidden"
                   style={{
                     height: `${footerContactHeight}px`,
-                    backgroundColor: "#ffffff",
+                    backgroundColor: contactBg,
                   }}
                 >
                   {disclaimer && (
                     <div
-                      className={`${(sigName || phone1 || email || adminPhoto) ? 'w-[55%]' : 'flex-1'} border-l-[15px] border-blue-600 pl-12 italic text-[#003300] opacity-80 leading-relaxed whitespace-pre-wrap`}
+                      className={`${(sigName || phone1 || email || adminPhoto) ? 'w-[55%]' : 'flex-1'} border-l-[15px] border-blue-600 pl-12 italic opacity-80 leading-relaxed whitespace-pre-wrap`}
                       style={{ 
+                        color: gamanikaColor,
                         fontSize: `${disclaimerSize}px`,
                         fontWeight: sectionBold.footer ? '900' : 'normal',
                         textAlign: sectionAlign.footer,
@@ -1687,10 +1810,9 @@ const BannerBuilder: React.FC<BannerBuilderProps> = ({ packageId }) => {
       </div>
 
       <style>{`
-                .custom-scrollbar::-webkit-scrollbar { height: 8px; width: 6px; }
-                .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 20px; }
-            `}</style>
-
+        .custom-scrollbar::-webkit-scrollbar { height: 8px; width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 20px; }
+      `}</style>
     </div>
   );
 };
