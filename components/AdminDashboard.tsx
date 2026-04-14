@@ -9,7 +9,7 @@ interface AdminDashboardProps {
 }
 
 const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onLogout }) => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'associates' | 'rankings' | 'packages' | 'bookings' | 'commissions' | 'payouts' | 'promocodes' | 'refunds' | 'commissionlevels' | 'traveldates' | 'bannergen'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'associates' | 'rankings' | 'packages' | 'bookings' | 'commissions' | 'payouts' | 'promocodes' | 'refunds' | 'commissionlevels' | 'traveldates' | 'bannergen' | 'inbox'>('overview');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const [usersList, setUsersList] = useState<any[]>([]);
@@ -44,6 +44,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onLogout }) =>
   const [editingLevel, setEditingLevel] = useState<number | null>(null);
   const [newLevelData, setNewLevelData] = useState({ level: '', percentage: '' });
 
+  const [inboxList, setInboxList] = useState<any[]>([]);
+  const [inboxSearch, setInboxSearch] = useState('');
+
   const [stats, setStats] = useState({
     totalUsers: 0,
     totalAssociates: 0,
@@ -65,8 +68,25 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onLogout }) =>
     image: '',
     location: '',
     track: '',
-    status: 'active'
+    status: 'active',
+    features: [] as string[]
   });
+
+  const [featureRows, setFeatureRows] = useState<string[]>([]);
+
+  const addFeatureRow = () => {
+    setFeatureRows([...featureRows, '']);
+  };
+
+  const removeFeatureRow = (index: number) => {
+    setFeatureRows(featureRows.filter((_, i) => i !== index));
+  };
+
+  const updateFeatureRow = (index: number, value: string) => {
+    const updated = [...featureRows];
+    updated[index] = value;
+    setFeatureRows(updated);
+  };
 
   const [itineraryRows, setItineraryRows] = useState<{ day: number; activity: string; description: string }[]>([]);
 
@@ -111,6 +131,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onLogout }) =>
         if (activeTab === 'refunds') setRefundsList(await dbService.getRefundsAdmin());
         if (activeTab === 'commissionlevels') setCommissionLevelsList(await dbService.getCommissionLevelsAdmin());
         if (activeTab === 'traveldates') setPackagesList(await dbService.getPackagesAdmin());
+        if (activeTab === 'inbox') setInboxList(await dbService.getContactMessages());
       } catch (e) {
         console.error("Fetch area error:", e);
       }
@@ -143,7 +164,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onLogout }) =>
 
     setIsSaving(true);
     try {
-      const packageData = { ...newPackage, itinerary: finalItinerary };
+      const packageData = { ...newPackage, itinerary: finalItinerary, features: featureRows.filter(f => f.trim() !== '') };
       if (editingPackageId) {
         await dbService.updatePackageAdmin({ ...packageData, package_id: editingPackageId });
         alert("Package updated successfully!");
@@ -166,6 +187,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onLogout }) =>
         status: 'active'
       });
       setItineraryRows([]);
+      setFeatureRows([]);
       setPackagesList(await dbService.getPackagesAdmin());
     } catch (err) {
       console.error("Failed to save package", err);
@@ -261,6 +283,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onLogout }) =>
             { id: 'refunds', icon: '🔄', label: 'Refunds' },
             { id: 'commissionlevels', icon: '⚖️', label: 'Commission Levels' },
             { id: 'traveldates', icon: '📅', label: 'Travel Dates' },
+            { id: 'inbox', icon: '📥', label: 'Inbox' },
             { id: 'bannergen', icon: '✨', label: 'AI Smart Banner' },
           ].map((tab) => (
             <button
@@ -534,6 +557,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onLogout }) =>
                     status: 'active'
                   });
                   setItineraryRows([]);
+                  setFeatureRows([]);
                   setShowAddModal(true);
                 }}>
                   + New Package
@@ -598,6 +622,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onLogout }) =>
                               });
                             }
                             setItineraryRows(rows);
+                            setFeatureRows(p.features && Array.isArray(p.features) ? p.features : []);
                             setShowAddModal(true);
                           }}
                           className="text-[10px] px-2 py-1 rounded font-bold bg-indigo-50 text-indigo-600">
@@ -1054,6 +1079,68 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onLogout }) =>
               </table>
             </div>
           </div>
+        ) : activeTab === 'inbox' ? (
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 bg-white p-8 rounded-3xl shadow-xl">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-2xl font-black text-slate-900 uppercase">User Inquiries (Inbox)</h3>
+              <div className="flex gap-4">
+                <input
+                  type="text"
+                  placeholder="Search Messages..."
+                  value={inboxSearch}
+                  onChange={(e) => setInboxSearch(e.target.value)}
+                  className="px-4 py-2 border border-slate-200 rounded-xl text-sm"
+                />
+              </div>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b uppercase text-[10px] font-black text-slate-400">
+                    <th className="p-3">Sender Details</th>
+                    <th className="p-3">Message</th>
+                    <th className="p-3">Date</th>
+                    <th className="p-3">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {inboxList.filter(m => `${m.name} ${m.email} ${m.phone} ${m.message}`.toLowerCase().includes(inboxSearch.toLowerCase())).map(m => (
+                    <tr key={m.id} className="border-b hover:bg-slate-50 transition-colors">
+                      <td className="p-3">
+                        <div className="font-bold text-slate-900">{m.name}</div>
+                        <div className="text-xs text-indigo-600 font-semibold">{m.email}</div>
+                        <div className="text-[10px] text-slate-500 font-mono tracking-tighter">{m.phone}</div>
+                      </td>
+                      <td className="p-3">
+                        <div className="text-sm text-slate-600 max-w-md break-words italic leading-relaxed">
+                          "{m.message}"
+                        </div>
+                      </td>
+                      <td className="p-3">
+                        <div className="text-[10px] font-black text-slate-400 uppercase tracking-tighter">
+                          {new Date(m.created_at).toLocaleDateString()}<br />
+                          {new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </div>
+                      </td>
+                      <td className="p-3">
+                        <a
+                          href={`mailto:${m.email}?subject=Reply to your Inquiry - TripFlux&body=Hello ${m.name},%0D%0A%0D%0A`}
+                          className="px-4 py-1.5 bg-indigo-50 text-indigo-600 text-[10px] font-black uppercase rounded-lg hover:bg-indigo-600 hover:text-white transition-all inline-block"
+                        >
+                          Reply
+                        </a>
+                      </td>
+                    </tr>
+                  ))}
+                  {inboxList.length === 0 && (
+                    <tr>
+                      <td colSpan={4} className="p-10 text-center text-slate-400 font-bold italic">No messages found in your inbox.</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
         ) : activeTab === 'bannergen' ? (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="mb-8">
@@ -1174,6 +1261,42 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onLogout }) =>
                         className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-600 focus:bg-white outline-none transition-all text-sm"
                         placeholder="e.g. Delhi > Agra > Jaipur"
                       />
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Package Inclusions</label>
+                      <button
+                        type="button"
+                        onClick={addFeatureRow}
+                        className="text-[10px] font-black text-indigo-600 uppercase hover:text-indigo-700"
+                      >
+                        + Add Inclusion
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-40 overflow-y-auto pr-2">
+                      {featureRows.map((feat, idx) => (
+                        <div key={idx} className="flex gap-2 items-center bg-slate-50 p-2 rounded-xl border border-slate-100 group">
+                          <input
+                            type="text"
+                            value={feat}
+                            onChange={(e) => updateFeatureRow(idx, e.target.value)}
+                            className="flex-1 px-3 py-2 bg-white border border-slate-100 rounded-lg text-xs outline-none focus:ring-1 focus:ring-indigo-500"
+                            placeholder="e.g. Daily Breakfast"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => removeFeatureRow(idx)}
+                            className="text-slate-300 hover:text-red-500 font-bold px-2"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ))}
+                      {featureRows.length === 0 && (
+                        <p className="col-span-full text-center py-2 text-[10px] text-slate-400 font-medium italic">No inclusions added. (Default inclusions will be shown to users)</p>
+                      )}
                     </div>
                   </div>
 

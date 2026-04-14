@@ -19,7 +19,7 @@ const SignupPage: React.FC<SignupPageProps> = ({ onBack, onAuthSuccess, isModal 
     const [phoneError, setPhoneError] = useState('');
 
     const validateEmail = (email: string) => {
-        const emailRegex = /^[a-zA-Z0-9_]+(\.[a-zA-Z0-9_]+)*@[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)+$/;
+        const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/;
         if (!email) return 'Email is required';
         if (email.includes(' ')) return 'Spaces are not allowed in email';
         if (!email.includes('@')) return 'Email must contain @ symbol';
@@ -133,11 +133,19 @@ const SignupPage: React.FC<SignupPageProps> = ({ onBack, onAuthSuccess, isModal 
                     body: JSON.stringify(payload),
                 });
 
-                const data = await response.json();
+                const text = await response.text();
+                let data: any = {};
+                try {
+                    data = JSON.parse(text);
+                } catch (e) {
+                    // Not JSON — handle empty or HTML response
+                    if (!response.ok) {
+                        throw new Error(`Server Error (${response.status}): The system is currently busy or unreachable. Please try again in a few moments.`);
+                    }
+                }
 
                 if (!response.ok) {
-                    const apiError = typeof data.error === 'string' ? data.error : JSON.stringify(data.error || 'Something went wrong');
-                    throw new Error(apiError);
+                    throw new Error(data.error || `Request failed with status ${response.status}`);
                 }
 
                 authUser = {
@@ -149,16 +157,14 @@ const SignupPage: React.FC<SignupPageProps> = ({ onBack, onAuthSuccess, isModal 
                     promoCode: data.promo_code
                 };
 
-                // Ensure we always have a valid numeric DB user_id
-                if (!data.user_id && data.email) {
-                    try {
-                        const lookup = await fetch(`/api/users/by-email/${encodeURIComponent(data.email)}`);
-                        if (lookup.ok) {
-                            const dbUser = await lookup.json();
-                            if (dbUser.user_id) authUser.id = dbUser.user_id.toString();
-                        }
-                    } catch (_) { /* ignore */ }
-                }
+                authUser = {
+                    id: data.user_id?.toString() || '',
+                    name: data.first_name || data.email?.split('@')[0].toUpperCase(),
+                    email: data.email,
+                    avatar: data.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=100&auto=format&fit=crop',
+                    role: data.role,
+                    promoCode: data.promo_code
+                };
             } catch (err: any) {
                 console.error("Authentication failed:", err);
                 errorMessage = err.message || "Connection refused. Please check your internet or try again later.";
@@ -256,7 +262,6 @@ const SignupPage: React.FC<SignupPageProps> = ({ onBack, onAuthSuccess, isModal 
                                     <input
                                         type="text"
                                         maxLength={10}
-                                        pattern="\d{10}"
                                         value={phone}
                                         onChange={(e) => {
                                             const val = e.target.value.replace(/\D/g, '').slice(0, 10);

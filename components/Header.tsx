@@ -8,8 +8,8 @@ interface HeaderProps {
   onAssociateLogin: () => void;
   user: User | null;
   onLogout: () => void;
-  onViewChange: (view: 'HOME' | 'INTERNATIONAL' | 'DOMESTIC' | 'PILGRIMAGE' | 'ABOUT' | 'CONTACT' | 'SIGNUP') => void;
-  currentView: 'HOME' | 'INTERNATIONAL' | 'DOMESTIC' | 'PILGRIMAGE' | 'ABOUT' | 'CONTACT' | 'SIGNUP';
+  onViewChange: (view: 'HOME' | 'INTERNATIONAL' | 'DOMESTIC' | 'PILGRIMAGE' | 'ABOUT' | 'CONTACT' | 'SIGNUP' | 'AI_SUGGESTIONS') => void;
+  currentView: 'HOME' | 'INTERNATIONAL' | 'DOMESTIC' | 'PILGRIMAGE' | 'ABOUT' | 'CONTACT' | 'SIGNUP' | 'AI_SUGGESTIONS';
   onGoToDashboard?: () => void;
   isMenuOpen: boolean;
   setIsMenuOpen: (open: boolean) => void;
@@ -55,6 +55,12 @@ const Header: React.FC<HeaderProps> = ({ onSignIn, onAdminClick, onAssociateLogi
           <button onClick={() => onViewChange('DOMESTIC')} className={`px-4 py-2 rounded text-[11px] font-bold uppercase tracking-widest transition-all ${currentView === 'DOMESTIC' ? 'bg-indigo-600 text-white shadow-lg' : 'text-white/80 hover:text-white hover:bg-white/5'}`}>Domestic</button>
           <button onClick={() => onViewChange('ABOUT')} className={`px-4 py-2 rounded text-[11px] font-bold uppercase tracking-widest transition-all ${currentView === 'ABOUT' ? 'bg-indigo-600 text-white shadow-lg' : 'text-white/80 hover:text-white hover:bg-white/5'}`}>About Us</button>
           <button onClick={() => onViewChange('CONTACT')} className={`px-4 py-2 rounded text-[11px] font-bold uppercase tracking-widest transition-all ${currentView === 'CONTACT' ? 'bg-indigo-600 text-white shadow-lg' : 'text-white/80 hover:text-white hover:bg-white/5'}`}>Contact Us</button>
+          <button onClick={() => onViewChange('AI_SUGGESTIONS')} className={`px-4 py-2 rounded text-[11px] font-bold uppercase tracking-widest transition-all ${currentView === 'AI_SUGGESTIONS' ? 'bg-indigo-600 text-white shadow-lg' : 'text-white/100 hover:text-white hover:bg-white/10 flex items-center gap-1.5 border border-indigo-500/30'}`}>
+            <svg className="w-3 h-3 text-indigo-400" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 2L14.85 8.65L22 9.24L16.5 13.97L18.18 21L12 17.27L5.82 21L7.5 13.97L2 9.24L9.15 8.65L12 2Z" />
+            </svg>
+            AI Suggestions
+          </button>
         </nav>
 
         <div className="flex items-center gap-5">
@@ -104,7 +110,8 @@ const Header: React.FC<HeaderProps> = ({ onSignIn, onAdminClick, onAssociateLogi
             { id: 'INTERNATIONAL', label: 'International' },
             { id: 'DOMESTIC', label: 'Domestic' },
             { id: 'ABOUT', label: 'About Us' },
-            { id: 'CONTACT', label: 'Contact Us' }
+            { id: 'CONTACT', label: 'Contact Us' },
+            { id: 'AI_SUGGESTIONS', label: 'AI Suggestions ✨' }
           ].map((item) => (
             <button
               key={item.id}

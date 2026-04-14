@@ -15,6 +15,7 @@ const BannerBuilder: React.FC<BannerBuilderProps> = ({ packageId }) => {
   const [loading, setLoading] = useState(false);
   const [format, setFormat] = useState<"A4" | "Square" | "Banner">("A4");
   const bannerRef = useRef<HTMLDivElement>(null);
+  const configInputRef = useRef<HTMLInputElement>(null);
 
   // --- VISIBILITY CONTROLLERS (ADD/DELETE) ---
   const [visibleSections, setVisibleSections] = useState({
@@ -26,7 +27,8 @@ const BannerBuilder: React.FC<BannerBuilderProps> = ({ packageId }) => {
     highGrid: true,
     reservation: true,
     rules: true,
-    footer: true,
+    footerBar: true,
+    contactInfo: true,
   });
 
   const toggleSection = (section: keyof typeof visibleSections) => {
@@ -43,7 +45,8 @@ const BannerBuilder: React.FC<BannerBuilderProps> = ({ packageId }) => {
     highGrid: "system-ui, sans-serif",
     reservation: "system-ui, sans-serif",
     rules: "system-ui, sans-serif",
-    footer: "system-ui, sans-serif",
+    footerBar: "system-ui, sans-serif",
+    contactInfo: "system-ui, sans-serif",
   });
 
   const handleFontChange = (section: keyof typeof fonts, value: string) => {
@@ -62,7 +65,8 @@ const BannerBuilder: React.FC<BannerBuilderProps> = ({ packageId }) => {
     highGrid: true,
     reservation: true,
     rules: true,
-    footer: true,
+    footerBar: true,
+    contactInfo: true,
   });
   const [sectionAlign, setSectionAlign] = useState<Record<string, 'left' | 'center' | 'right'>>({
     header: 'center',
@@ -73,7 +77,8 @@ const BannerBuilder: React.FC<BannerBuilderProps> = ({ packageId }) => {
     highGrid: 'left',
     reservation: 'center',
     rules: 'left',
-    footer: 'center',
+    footerBar: 'center',
+    contactInfo: 'center',
   });
 
   // --- 1. HEADER ---
@@ -368,6 +373,158 @@ const BannerBuilder: React.FC<BannerBuilderProps> = ({ packageId }) => {
     }
   };
 
+  const saveDraft = () => {
+    const draftData = {
+      visibleSections, fonts, globalBg, outerBorderColor, outerBorderWidth, sectionBold, sectionAlign,
+      headerHeight, brandName, brandNameSize, brandNameColor, brandSub, brandSubSize, brandSubColor, headerBgColor, headerImgL, headerImgR,
+      titleImg, titleBoxHeight, title, titleSize, titleColor, titleBoxColor,
+      trip1Height, trip1Label, trip1LabelSize, trip1Details, trip1DetailsSize, trip1DetailsColor, trip1Price, trip1PriceSize, trip1Bg, trainImg,
+      trip2Height, trip2Label, trip2LabelSize, trip2Details, trip2DetailsSize, trip2DetailsColor, trip2Price, trip2PriceSize, trip2Bg, planeImg,
+      highTitleBarHeight, highTitle, highTitleSize, highTitleColor, highTitleBg,
+      highGridHeight, highlights, highSize, highColor, highDisplayMode,
+      reservationHeight, reservationText, reservationSize, reservationBg, reservationColor,
+      rulesHeight, rules, ruleSize, busImg, ruleDisplayMode, ruleBg, ruleColor,
+      footerBarHeight, footerContactHeight, footerQuestion, footerQuestionSize, footerPoints, footerPointsSize, featureBg,
+      disclaimer, disclaimerSize, contactBg, gamanikaColor, sigName, sigNameSize, phone1, phoneSize, email, adminPhoto
+    };
+    localStorage.setItem("tripflux_banner_draft", JSON.stringify(draftData));
+    
+    // Also trigger file download for a persistent backup
+    const blob = new Blob([JSON.stringify(draftData, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `tripflux-banner-config-${Date.now()}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    alert("Draft saved to browser storage and downloaded as JSON file!");
+  };
+
+  const handleConfigImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const d = JSON.parse(event.target?.result as string);
+        applyDraft(d);
+        alert("Banner configuration loaded from file!");
+      } catch (err) {
+        console.error("Failed to parse config file:", err);
+        alert("Invalid configuration file.");
+      }
+    };
+    reader.readAsText(file);
+    // Reset the input value so the same file can be loaded again if needed
+    e.target.value = "";
+  };
+
+  const applyDraft = (d: any) => {
+    if (d.visibleSections) setVisibleSections(d.visibleSections);
+    if (d.fonts) setFonts(d.fonts);
+    if (d.globalBg) setGlobalBg(d.globalBg);
+    if (d.outerBorderColor) setOuterBorderColor(d.outerBorderColor);
+    if (d.outerBorderWidth !== undefined) setOuterBorderWidth(d.outerBorderWidth);
+    if (d.sectionBold) setSectionBold(d.sectionBold);
+    if (d.sectionAlign) setSectionAlign(d.sectionAlign);
+    if (d.headerHeight) setHeaderHeight(d.headerHeight);
+    if (d.brandName) setBrandName(d.brandName);
+    if (d.brandNameSize) setBrandNameSize(d.brandNameSize);
+    if (d.brandNameColor) setBrandNameColor(d.brandNameColor);
+    if (d.brandSub) setBrandSub(d.brandSub);
+    if (d.brandSubSize) setBrandSubSize(d.brandSubSize);
+    if (d.brandSubColor) setBrandSubColor(d.brandSubColor);
+    if (d.headerBgColor) setHeaderBgColor(d.headerBgColor);
+    if (d.headerImgL) setHeaderImgL(d.headerImgL);
+    if (d.headerImgR) setHeaderImgR(d.headerImgR);
+    if (d.titleImg) setTitleImg(d.titleImg);
+    if (d.titleBoxHeight) setTitleBoxHeight(d.titleBoxHeight);
+    if (d.title) setTitle(d.title);
+    if (d.titleSize) setTitleSize(d.titleSize);
+    if (d.titleColor) setTitleColor(d.titleColor);
+    if (d.titleBoxColor) setTitleBoxColor(d.titleBoxColor);
+    if (d.trip1Height) setTrip1Height(d.trip1Height);
+    if (d.trip1Label) setTrip1Label(d.trip1Label);
+    if (d.trip1LabelSize) setTrip1LabelSize(d.trip1LabelSize);
+    if (d.trip1Details) setTrip1Details(d.trip1Details);
+    if (d.trip1DetailsSize) setTrip1DetailsSize(d.trip1DetailsSize);
+    if (d.trip1DetailsColor) setTrip1DetailsColor(d.trip1DetailsColor);
+    if (d.trip1Price) setTrip1Price(d.trip1Price);
+    if (d.trip1PriceSize) setTrip1PriceSize(d.trip1PriceSize);
+    if (d.trip1Bg) setTrip1Bg(d.trip1Bg);
+    if (d.trainImg) setTrainImg(d.trainImg);
+    if (d.trip2Height) setTrip2Height(d.trip2Height);
+    if (d.trip2Label) setTrip2Label(d.trip2Label);
+    if (d.trip2LabelSize) setTrip2LabelSize(d.trip2LabelSize);
+    if (d.trip2Details) setTrip2Details(d.trip2Details);
+    if (d.trip2DetailsSize) setTrip2DetailsSize(d.trip2DetailsSize);
+    if (d.trip2DetailsColor) setTrip2DetailsColor(d.trip2DetailsColor);
+    if (d.trip2Price) setTrip2Price(d.trip2Price);
+    if (d.trip2PriceSize) setTrip2PriceSize(d.trip2PriceSize);
+    if (d.trip2Bg) setTrip2Bg(d.trip2Bg);
+    if (d.planeImg) setPlaneImg(d.planeImg);
+    if (d.highTitleBarHeight) setHighTitleBarHeight(d.highTitleBarHeight);
+    if (d.highTitle) setHighTitle(d.highTitle);
+    if (d.highTitleSize) setHighTitleSize(d.highTitleSize);
+    if (d.highTitleColor) setHighTitleColor(d.highTitleColor);
+    if (d.highTitleBg) setHighTitleBg(d.highTitleBg);
+    if (d.highGridHeight) setHighGridHeight(d.highGridHeight);
+    if (d.highlights) setHighlights(d.highlights);
+    if (d.highSize) setHighSize(d.highSize);
+    if (d.highColor) setHighColor(d.highColor);
+    if (d.highDisplayMode) setHighDisplayMode(d.highDisplayMode);
+    if (d.reservationHeight) setReservationHeight(d.reservationHeight);
+    if (d.reservationText) setReservationText(d.reservationText);
+    if (d.reservationSize) setReservationSize(d.reservationSize);
+    if (d.reservationBg) setReservationBg(d.reservationBg);
+    if (d.reservationColor) setReservationColor(d.reservationColor);
+    if (d.rulesHeight) setRulesHeight(d.rulesHeight);
+    if (d.rules) setRules(d.rules);
+    if (d.ruleSize) setRuleSize(d.ruleSize);
+    if (d.busImg) setBusImg(d.busImg);
+    if (d.ruleDisplayMode) setRuleDisplayMode(d.ruleDisplayMode);
+    if (d.ruleBg) setRuleBg(d.ruleBg);
+    if (d.ruleColor) setRuleColor(d.ruleColor);
+    if (d.footerBarHeight) setFooterBarHeight(d.footerBarHeight);
+    if (d.footerContactHeight) setFooterContactHeight(d.footerContactHeight);
+    if (d.footerQuestion) setFooterQuestion(d.footerQuestion);
+    if (d.footerQuestionSize) setFooterQuestionSize(d.footerQuestionSize);
+    if (d.footerPoints) setFooterPoints(d.footerPoints);
+    if (d.footerPointsSize) setFooterPointsSize(d.footerPointsSize);
+    if (d.featureBg) setFeatureBg(d.featureBg);
+    if (d.disclaimer) setDisclaimer(d.disclaimer);
+    if (d.disclaimerSize) setDisclaimerSize(d.disclaimerSize);
+    if (d.contactBg) setContactBg(d.contactBg);
+    if (d.gamanikaColor) setGamanikaColor(d.gamanikaColor);
+    if (d.sigName) setSigName(d.sigName);
+    if (d.sigNameSize) setSigNameSize(d.sigNameSize);
+    if (d.phone1) setPhone1(d.phone1);
+    if (d.phoneSize) setPhoneSize(d.phoneSize);
+    if (d.email) setEmail(d.email);
+    if (d.adminPhoto) setAdminPhoto(d.adminPhoto);
+  };
+
+  const loadDraft = () => {
+    // Priority 1: Open file explorer
+    if (configInputRef.current) {
+      configInputRef.current.click();
+      return;
+    }
+
+    // Fallback: Local Storage
+    const raw = localStorage.getItem("tripflux_banner_draft");
+    if (!raw) {
+      alert("No saved draft found.");
+      return;
+    }
+    const d = JSON.parse(raw);
+    applyDraft(d);
+    alert("Draft loaded from browser storage!");
+  };
+
 
   const getDimensions = () => {
     switch (format) {
@@ -499,6 +656,20 @@ const BannerBuilder: React.FC<BannerBuilderProps> = ({ packageId }) => {
             >
               ✨ AI Sync
             </button>
+            <div className="grid grid-cols-2 gap-1 mt-1">
+              <button
+                onClick={saveDraft}
+                className="py-1 bg-emerald-500 text-white text-[9px] font-black rounded uppercase hover:bg-emerald-600 shadow-sm"
+              >
+                💾 Save
+              </button>
+              <button
+                onClick={loadDraft}
+                className="py-1 bg-amber-500 text-white text-[9px] font-black rounded uppercase hover:bg-amber-600 shadow-sm"
+              >
+                📂 Load
+              </button>
+            </div>
             <button
               disabled={loading}
               onClick={downloadBanner}
@@ -506,6 +677,15 @@ const BannerBuilder: React.FC<BannerBuilderProps> = ({ packageId }) => {
             >
               {loading ? "Processing..." : "📥 DOWNLOAD IMAGE"}
             </button>
+
+            {/* Hidden Input for Config Import */}
+            <input
+              type="file"
+              ref={configInputRef}
+              style={{ display: "none" }}
+              accept=".json"
+              onChange={handleConfigImport}
+            />
           </div>
 
           {/* SECTION 1: HEADER */}
@@ -1092,28 +1272,25 @@ const BannerBuilder: React.FC<BannerBuilderProps> = ({ packageId }) => {
             </div>
           </div>
 
-          {/* SECTION 9: FOOTER */}
+          {/* SECTION 9: FOOTER BAR */}
           <div
-            className={`min-w-[480px] flex flex-col gap-1 shrink-0 overflow-y-auto custom-scrollbar ${!visibleSections.footer ? "opacity-40 grayscale" : ""}`}
+            className={`min-w-[280px] flex flex-col gap-1 shrink-0 border-r pr-6 overflow-y-auto custom-scrollbar ${!visibleSections.footerBar ? "opacity-40 grayscale" : ""}`}
           >
             <h3 className="text-[10px] font-black text-slate-800 uppercase mb-1 text-center">
-              9. Footer
+              9. Footer Bar
             </h3>
-            <VisibilityToggle section="footer" label="Footer" />
-            {renderFontSelector("footer")}
-            {/* 9. FOOTER FEATURES */}
+            <VisibilityToggle section="footerBar" label="Footer Bar" />
+            {renderFontSelector("footerBar")}
             <div className="p-2 bg-slate-50 rounded border mb-2">
               <div className="flex justify-between items-center mb-1">
                 <label className="text-[7px] font-black opacity-30 uppercase">Question</label>
                 <div className="flex gap-2 items-center">
-                  <label className="text-[7px] font-black opacity-30 uppercase">Size</label>
                   <input
                     type="number"
                     value={footerQuestionSize}
                     onChange={(e) => setFooterQuestionSize(Number(e.target.value))}
                     className="w-10 p-1 text-[8px] border rounded"
                   />
-                  <label className="text-[7px] font-black opacity-30 uppercase">BG</label>
                   <input
                     type="color"
                     value={featureBg}
@@ -1129,15 +1306,12 @@ const BannerBuilder: React.FC<BannerBuilderProps> = ({ packageId }) => {
               />
               <div className="flex justify-between items-center mb-1">
                 <label className="text-[7px] font-black opacity-30 uppercase">Grid Points</label>
-                <div className="flex gap-2 items-center">
-                  <label className="text-[7px] font-black opacity-30 uppercase">Size</label>
-                  <input
-                    type="number"
-                    value={footerPointsSize}
-                    onChange={(e) => setFooterPointsSize(Number(e.target.value))}
-                    className="w-10 p-1 text-[8px] border rounded"
-                  />
-                </div>
+                <input
+                  type="number"
+                  value={footerPointsSize}
+                  onChange={(e) => setFooterPointsSize(Number(e.target.value))}
+                  className="w-10 p-1 text-[8px] border rounded"
+                />
               </div>
               <div className="grid grid-cols-2 gap-1">
                 {footerPoints.map((pt, idx) => (
@@ -1150,81 +1324,12 @@ const BannerBuilder: React.FC<BannerBuilderProps> = ({ packageId }) => {
                       newPts[idx] = e.target.value;
                       setFooterPoints(newPts);
                     }}
-                    placeholder={`Point ${idx + 1}`}
                   />
                 ))}
               </div>
             </div>
-
-            <div className="grid grid-cols-2 gap-4 mt-2 pr-2 pb-2">
-              <div className="space-y-1">
-                <div className="p-1 bg-slate-100 rounded border">
-                  <label className="text-[8px] font-black uppercase block mb-1">
-                    Upload Square Photo
-                  </label>
-                  <input
-                    type="file"
-                    className="text-[8px] w-full"
-                    onChange={(e) => handleFileUpload(e, setAdminPhoto)}
-                  />
-                </div>
-              </div>
-              <div className="space-y-1">
-                <input
-                  className="w-full p-1 text-[10px] border rounded font-black"
-                  value={sigName}
-                  onChange={(e) => setSigName(e.target.value)}
-                />
-                <div className="flex gap-1">
-                  <input
-                    className="flex-1 p-1 text-[10px] border rounded font-black"
-                    value={phone1}
-                    onChange={(e) => setPhone1(e.target.value)}
-                  />
-                  <input
-                    type="number"
-                    value={phoneSize}
-                    onChange={(e) => setPhoneSize(Number(e.target.value))}
-                    className="w-10 p-1 text-[10px] border rounded"
-                  />
-                </div>
-                <input
-                  className="w-full p-1 text-[10px] border rounded font-black lowercase text-indigo-600"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
-                <textarea
-                  className="w-full p-1 text-[8px] border rounded h-10 mt-1"
-                  value={disclaimer}
-                  onChange={(e) => setDisclaimer(e.target.value)}
-                />
-                <div className="flex gap-2 items-center mt-1">
-                  <label className="text-[7px] font-black opacity-30 uppercase">Size</label>
-                  <input
-                    type="number"
-                    value={disclaimerSize}
-                    onChange={(e) => setDisclaimerSize(Number(e.target.value))}
-                    className="w-10 p-1 text-[10px] border rounded"
-                  />
-                  <label className="text-[7px] font-black opacity-30 uppercase">BG</label>
-                  <input
-                    type="color"
-                    value={contactBg}
-                    onChange={(e) => setContactBg(e.target.value)}
-                    className="w-5 h-5 rounded cursor-pointer"
-                  />
-                  <label className="text-[7px] font-black opacity-30 uppercase">Text</label>
-                  <input
-                    type="color"
-                    value={gamanikaColor}
-                    onChange={(e) => setGamanikaColor(e.target.value)}
-                    className="w-5 h-5 rounded cursor-pointer"
-                  />
-                </div>
-              </div>
-            </div>
             <div className="pt-2">
-              <label className="text-[8px] font-black opacity-30 uppercase block">Highlights Bar Height</label>
+              <label className="text-[8px] font-black opacity-30 uppercase block">Bar Height</label>
               <input
                 type="range"
                 min="50"
@@ -1233,7 +1338,76 @@ const BannerBuilder: React.FC<BannerBuilderProps> = ({ packageId }) => {
                 onChange={(e) => setFooterBarHeight(Number(e.target.value))}
                 className="w-full h-3 mb-2"
               />
-              <label className="text-[8px] font-black opacity-30 uppercase block">Contact Box Height</label>
+            </div>
+          </div>
+
+          {/* SECTION 10: CONTACT INFO */}
+          <div
+            className={`min-w-[280px] flex flex-col gap-1 shrink-0 overflow-y-auto custom-scrollbar ${!visibleSections.contactInfo ? "opacity-40 grayscale" : ""}`}
+          >
+            <h3 className="text-[10px] font-black text-indigo-800 uppercase mb-1 text-center">
+              10. Contact Info
+            </h3>
+            <VisibilityToggle section="contactInfo" label="Contact" />
+            {renderFontSelector("contactInfo")}
+            <div className="space-y-1">
+              <label className="text-[8px] font-black uppercase block">Upload Photo</label>
+              <input
+                type="file"
+                className="text-[8px] w-full"
+                onChange={(e) => handleFileUpload(e, setAdminPhoto)}
+              />
+              <input
+                className="w-full p-1 text-[10px] border rounded font-black"
+                value={sigName}
+                onChange={(e) => setSigName(e.target.value)}
+              />
+              <div className="flex gap-1">
+                <input
+                  className="flex-1 p-1 text-[10px] border rounded font-black"
+                  value={phone1}
+                  onChange={(e) => setPhone1(e.target.value)}
+                />
+                <input
+                  type="number"
+                  value={phoneSize}
+                  onChange={(e) => setPhoneSize(Number(e.target.value))}
+                  className="w-10 p-1 text-[10px] border rounded"
+                />
+              </div>
+              <input
+                className="w-full p-1 text-[10px] border rounded font-black lowercase text-indigo-600"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+              <textarea
+                className="w-full p-1 text-[8px] border rounded h-10 mt-1"
+                value={disclaimer}
+                onChange={(e) => setDisclaimer(e.target.value)}
+              />
+              <div className="flex gap-2 items-center mt-1">
+                <input
+                  type="number"
+                  value={disclaimerSize}
+                  onChange={(e) => setDisclaimerSize(Number(e.target.value))}
+                  className="w-10 p-1 text-[10px] border rounded"
+                />
+                <input
+                  type="color"
+                  value={contactBg}
+                  onChange={(e) => setContactBg(e.target.value)}
+                  className="w-5 h-5 rounded cursor-pointer"
+                />
+                <input
+                  type="color"
+                  value={gamanikaColor}
+                  onChange={(e) => setGamanikaColor(e.target.value)}
+                  className="w-5 h-5 rounded cursor-pointer"
+                />
+              </div>
+            </div>
+            <div className="pt-2">
+              <label className="text-[8px] font-black opacity-30 uppercase block">Box Height</label>
               <input
                 type="range"
                 min="80"
@@ -1451,7 +1625,7 @@ const BannerBuilder: React.FC<BannerBuilderProps> = ({ packageId }) => {
                   </div>
                 )}
                 {trip1Price && (
-                  <div className="bg-[#cc0066] text-white px-10 py-6 rounded-[80px] border-[12px] border-white shadow-2xl flex items-center justify-center shrink-0 min-w-[380px] z-10">
+                  <div className="bg-[#cc0066] text-white px-8 py-4 rounded-[60px] border-[8px] border-white shadow-2xl flex items-center justify-center shrink-0 min-w-[280px] z-10">
                     <span
                       style={{ 
                         fontSize: `${trip1PriceSize}px`,
@@ -1463,10 +1637,12 @@ const BannerBuilder: React.FC<BannerBuilderProps> = ({ packageId }) => {
                   </div>
                 )}
                 {trainImg && (
-                  <img
-                    src={trainImg}
-                    className="absolute right-[-20px] bottom-[-20px] w-96 opacity-20 grayscale"
-                  />
+                  <div className="shrink-0 w-80 h-full max-h-[200px] rounded-2xl overflow-hidden border-4 border-white shadow-xl z-20">
+                    <img
+                      src={trainImg}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
                 )}
               </div>
             )}
@@ -1508,7 +1684,7 @@ const BannerBuilder: React.FC<BannerBuilderProps> = ({ packageId }) => {
                   </div>
                 )}
                 {trip2Price && (
-                  <div className="bg-[#cc0066] text-white px-10 py-6 rounded-[80px] border-[12px] border-white shadow-2xl flex items-center justify-center shrink-0 min-w-[380px] z-10">
+                  <div className="bg-[#cc0066] text-white px-8 py-4 rounded-[60px] border-[8px] border-white shadow-2xl flex items-center justify-center shrink-0 min-w-[280px] z-10">
                     <span
                       style={{ 
                         fontSize: `${trip2PriceSize}px`,
@@ -1520,10 +1696,12 @@ const BannerBuilder: React.FC<BannerBuilderProps> = ({ packageId }) => {
                   </div>
                 )}
                 {planeImg && (
-                  <img
-                    src={planeImg}
-                    className="absolute right-[-20px] top-[-20px] w-96 opacity-20 grayscale"
-                  />
+                  <div className="shrink-0 w-80 h-full max-h-[200px] rounded-2xl overflow-hidden border-4 border-white shadow-xl z-20">
+                    <img
+                      src={planeImg}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
                 )}
               </div>
             )}
@@ -1701,108 +1879,108 @@ const BannerBuilder: React.FC<BannerBuilderProps> = ({ packageId }) => {
                 </div>
               )}
 
-            {/* 9. FOOTER */}
-            {visibleSections.footer && (disclaimer || sigName || phone1 || email || adminPhoto) && (
+            {/* 9. FOOTER BAR */}
+            {visibleSections.footerBar && (footerQuestion || footerPoints.some(p => p)) && (
               <div
-                className="w-full shrink-0"
-                style={{ backgroundColor: globalBg, fontFamily: fonts.footer }}
+                className="w-full shrink-0 px-10 flex items-center justify-between border-b-8 border-indigo-900 overflow-hidden"
+                style={{
+                  backgroundColor: featureBg,
+                  minHeight: `${footerBarHeight}px`,
+                  fontFamily: fonts.footerBar,
+                  fontWeight: sectionBold.footerBar ? '900' : 'normal',
+                }}
               >
-                <div
-                  className="px-10 flex items-center justify-between border-b-8 border-indigo-900 overflow-hidden"
-                  style={{
-                    backgroundColor: featureBg,
-                    minHeight: `${footerBarHeight}px`,
-                    fontWeight: sectionBold.footer ? '900' : 'normal',
-                  }}
-                >
-                  <div className="bg-white/20 px-8 py-2 rounded-full border-2 border-white/30 shadow-sm flex-none min-w-max mr-8 z-10">
-                    <span 
-                      className="text-white uppercase tracking-widest font-black whitespace-nowrap"
-                      style={{ fontSize: `${footerQuestionSize}px` }}
-                    >✨ {footerQuestion} ✨</span>
-                  </div>
-                  <div className="flex-1 grid grid-cols-2 gap-x-6 gap-y-2">
-                    {footerPoints.map((pt, idx) => pt && (
-                      <div key={idx} className="flex items-center gap-3 text-white justify-start">
-                        <span className="text-yellow-400 text-3xl shrink-0">☸</span>
-                        <span className="leading-tight break-words" style={{ fontSize: `${footerPointsSize}px` }}>{pt}</span>
-                      </div>
-                    ))}
-                  </div>
+                <div className="bg-white/20 px-8 py-2 rounded-full border-2 border-white/30 shadow-sm flex-none min-w-max mr-8 z-10">
+                  <span 
+                    className="text-white uppercase tracking-widest font-black whitespace-nowrap"
+                    style={{ fontSize: `${footerQuestionSize}px` }}
+                  >✨ {footerQuestion} ✨</span>
                 </div>
-
-                <div
-                  className="p-10 flex items-center justify-between shadow-2xl overflow-hidden"
-                  style={{
-                    height: `${footerContactHeight}px`,
-                    backgroundColor: contactBg,
-                  }}
-                >
-                  {disclaimer && (
-                    <div
-                      className={`${(sigName || phone1 || email || adminPhoto) ? 'w-[55%]' : 'flex-1'} border-l-[15px] border-blue-600 pl-12 italic opacity-80 leading-relaxed whitespace-pre-wrap`}
-                      style={{ 
-                        color: gamanikaColor,
-                        fontSize: `${disclaimerSize}px`,
-                        fontWeight: sectionBold.footer ? '900' : 'normal',
-                        textAlign: sectionAlign.footer,
-                      }}
-                    >
-                      {disclaimer}
+                <div className="flex-1 grid grid-cols-2 gap-x-6 gap-y-2">
+                  {footerPoints.map((pt, idx) => pt && (
+                    <div key={idx} className="flex items-center gap-3 text-white justify-start">
+                      <span className="text-yellow-400 text-3xl shrink-0">☸</span>
+                      <span className="leading-tight break-words" style={{ fontSize: `${footerPointsSize}px` }}>{pt}</span>
                     </div>
-                  )}
-                  {(sigName || phone1 || email || adminPhoto) && (
-                    <div className="flex-1 flex flex-col items-end">
-                      <div className="bg-white border-[12px] border-indigo-950 rounded-[60px] p-8 flex items-center gap-10 shadow-4xl relative">
-                        <div className="flex flex-col items-end">
-                          {sigName && (
-                            <span
-                              className="text-indigo-900 italic opacity-60 text-2xl mb-2"
-                              style={{ 
-                                fontSize: `${sigNameSize}px`,
-                                fontWeight: sectionBold.footer ? '900' : 'normal',
-                                textAlign: sectionAlign.footer,
-                              }}
-                            >
-                              {sigName}
-                            </span>
-                          )}
-                          {phone1 && (
-                            <span
-                              className="text-emerald-700 tracking-tighter"
-                              style={{ 
-                                fontSize: `${phoneSize}px`,
-                                fontWeight: sectionBold.footer ? '900' : 'normal',
-                                textAlign: sectionAlign.footer,
-                              }}
-                            >
-                              {phone1}
-                            </span>
-                          )}
-                          {email && (
-                            <p 
-                              className="text-indigo-600 mt-2 text-lg lowercase border-b-4 border-indigo-50"
-                              style={{
-                                fontWeight: sectionBold.footer ? '900' : 'normal',
-                                textAlign: sectionAlign.footer,
-                              }}
-                            >
-                              {email}
-                            </p>
-                          )}
-                        </div>
-                        {adminPhoto && (
-                          <div className="w-[180px] h-[180px] rounded-[50px] overflow-hidden border-[8px] border-indigo-950 shadow-2xl bg-slate-50 shrink-0">
-                            <img
-                              src={adminPhoto}
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* 10. CONTACT INFO */}
+            {visibleSections.contactInfo && (disclaimer || sigName || phone1 || email || adminPhoto) && (
+              <div
+                className="w-full shrink-0 p-10 flex items-center justify-between shadow-2xl overflow-hidden"
+                style={{
+                  height: `${footerContactHeight}px`,
+                  backgroundColor: contactBg,
+                  fontFamily: fonts.contactInfo,
+                }}
+              >
+                {disclaimer && (
+                  <div
+                    className={`${(sigName || phone1 || email || adminPhoto) ? 'w-[55%]' : 'flex-1'} border-l-[15px] border-blue-600 pl-12 italic opacity-80 leading-relaxed whitespace-pre-wrap`}
+                    style={{ 
+                      color: gamanikaColor,
+                      fontSize: `${disclaimerSize}px`,
+                      fontWeight: sectionBold.contactInfo ? '900' : 'normal',
+                      textAlign: sectionAlign.contactInfo,
+                    }}
+                  >
+                    {disclaimer}
+                  </div>
+                )}
+                {(sigName || phone1 || email || adminPhoto) && (
+                  <div className="flex-1 flex flex-col items-end">
+                    <div className="bg-white border-[12px] border-indigo-950 rounded-[60px] p-8 flex items-center gap-10 shadow-4xl relative">
+                      <div className="flex flex-col items-end">
+                        {sigName && (
+                          <span
+                            className="text-indigo-900 italic opacity-60 text-2xl mb-2"
+                            style={{ 
+                              fontSize: `${sigNameSize}px`,
+                              fontWeight: sectionBold.contactInfo ? '900' : 'normal',
+                              textAlign: sectionAlign.contactInfo,
+                            }}
+                          >
+                            {sigName}
+                          </span>
+                        )}
+                        {phone1 && (
+                          <span
+                            className="text-emerald-700 tracking-tighter"
+                            style={{ 
+                              fontSize: `${phoneSize}px`,
+                              fontWeight: sectionBold.contactInfo ? '900' : 'normal',
+                              textAlign: sectionAlign.contactInfo,
+                            }}
+                          >
+                            {phone1}
+                          </span>
+                        )}
+                        {email && (
+                          <p 
+                            className="text-indigo-600 mt-2 text-lg lowercase border-b-4 border-indigo-50"
+                            style={{
+                              fontWeight: sectionBold.contactInfo ? '900' : 'normal',
+                              textAlign: sectionAlign.contactInfo,
+                            }}
+                          >
+                            {email}
+                          </p>
                         )}
                       </div>
+                      {adminPhoto && (
+                        <div className="w-[180px] h-[180px] rounded-[50px] overflow-hidden border-[8px] border-indigo-950 shadow-2xl bg-slate-50 shrink-0">
+                          <img
+                            src={adminPhoto}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
             )}
           </div>

@@ -5,8 +5,27 @@ const cors = require('cors');
 const logger = require('./services/logger.cjs');
 require('dotenv').config();
 
+const rateLimit = require('express-rate-limit');
 const app = express();
-const port = process.env.PORT || 3001;
+const portArg = process.argv.indexOf('--port');
+const port = portArg !== -1 ? parseInt(process.argv[portArg + 1]) : (process.env.PORT || 3001);
+
+// Rate limiting: 100 requests per 15 minutes for general API
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  message: { error: 'Too many requests from this IP, please try again after 15 minutes' }
+});
+
+// Stricter limiter for login: 20 attempts per 1 minute (as per user req)
+const loginLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 20,
+  message: { error: 'Too many login attempts. Please wait 1 minute.' }
+});
+
+app.use('/api/login', loginLimiter);
+app.use('/api/', limiter);
 
 // Use custom logging middleware
 app.use(logger.requestLogger);
@@ -59,6 +78,9 @@ const poolConfig = {
   database: process.env.DB_NAME,
   password: process.env.DB_PASSWORD,
   port: process.env.DB_PORT,
+  max: 25, // Increased connections
+  connectionTimeoutMillis: 10000, // 10s timeout
+  idleTimeoutMillis: 30000
 };
 
 if (process.env.NODE_ENV === 'production') {
@@ -223,8 +245,23 @@ app.post('/api/register', async (req, res) => {
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
       RETURNING user_id, custom_user_id, associate_id, email, first_name, role, avatar
     `;
-    const result = await pool.query(query, [firstName, lastName, email, phone, password, role, panNumber, dateOfBirth || null, customUserId, associateId]);
+    const result = await pool.query(query, [
+      firstName,
+      lastName,
+      email,
+      phone || null,
+      password,
+      role,
+      panNumber || null,
+      dateOfBirth || null,
+      customUserId,
+      associateId
+    ]);
+
     const newUser = result.rows[0];
+    if (!newUser) {
+      throw new Error('User creation failed - no record returned from database');
+    }
 
     // Handle Referral logic
     if (referralCode) {
@@ -288,12 +325,14 @@ app.post('/api/register', async (req, res) => {
     await pool.query('COMMIT');
     res.status(201).json(newUser);
   } catch (err) {
-    await pool.query('ROLLBACK');
-    console.error('Registration error:', err);
+    if (pool.query) {
+      try { await pool.query('ROLLBACK'); } catch (rbErr) { console.error('Rollback failed:', rbErr); }
+    }
+    console.error('Registration error details:', err);
     if (err.code === '23505') {
       res.status(400).json({ error: 'Email already exists' });
     } else {
-      res.status(500).json({ error: 'Internal server error' });
+      res.status(500).json({ error: 'Registration failed: ' + (err.message || 'Unknown server error') });
     }
   }
 });
@@ -657,6 +696,18 @@ app.post('/api/bookings', async (req, res) => {
       ? parseFloat(totalAmount.replace(/[^\d.]/g, ''))
       : totalAmount;
 
+    // 3.5 Prevent Double Booking (Concurrency check)
+    if (numericUserId) {
+      const dupCheck = await pool.query(
+        "SELECT booking_id FROM bookings WHERE user_id = $1 AND package_id = $2 AND travel_date = $3 AND created_at >= NOW() - INTERVAL '1 minute' FOR UPDATE",
+        [numericUserId, numericPackageId, travelDate || new Date()]
+      );
+      if (dupCheck.rows.length > 0) {
+        await pool.query('ROLLBACK');
+        return res.status(409).json({ error: 'Duplicate booking detected. Please wait before booking again.' });
+      }
+    }
+
     // 4. Insert booking (also store user_email as a permanent record)
     const insertQuery = `
       INSERT INTO bookings (user_id, associate_id, package_id, travel_date, total_amount, status, user_email)
@@ -677,7 +728,7 @@ app.post('/api/bookings', async (req, res) => {
     for (const p of validPassengers) {
       await pool.query(
         `INSERT INTO passengers (booking_id, name, age, gender, id_proof) VALUES ($1, $2, $3, $4, $5)`,
-        [newBooking.booking_id, p.name.trim(), parseInt(p.age) || 0, p.gender || 'Not Specified', p.id_proof ? p.id_proof.trim() : null]
+        [newBooking.booking_id, p.name.trim(), parseInt(p.age) || 0, p.gender || 'Other', p.id_proof ? p.id_proof.trim() : null]
       );
     }
 
@@ -1081,7 +1132,7 @@ app.post('/api/admin/generate-banner-content', async (req, res) => {
         const responseText = result.response.text();
         const cleaned = responseText.replace(/```json|```/g, '').trim();
         const aiJson = JSON.parse(cleaned);
-        
+
         bannerData = { ...bannerData, ...aiJson };
       } catch (aiErr) {
         console.warn('AI Generation failed, using base data:', aiErr.message);
@@ -1098,6 +1149,129 @@ app.post('/api/admin/generate-banner-content', async (req, res) => {
   } catch (err) {
     console.error('Error generating banner content:', err);
     res.status(500).json({ error: 'Internal server error while generating banner content' });
+  }
+});
+
+// AI Suggestions endpoint
+app.post('/api/ai/suggestions', async (req, res) => {
+  const { source, destination, days, nights, accommodation } = req.body;
+  const apiKey = process.env.GEMINI_API_KEY;
+
+  // Dynamic mock generator based on inputs
+  const buildMock = () => {
+    const numDays = parseInt(days) || 3;
+    const accType = accommodation || '3 Star Hotel';
+    const dest = destination || 'your destination';
+    const src = source || 'your city';
+
+    const accommodationCostMap = {
+      '3 Star Hotel': { min: 12000, max: 22000, note: '₹1,500-₹3,500/night. Includes breakfast, WiFi, and standard amenities.' },
+      '4 Star Hotel': { min: 22000, max: 40000, note: '₹3,500-₹7,000/night. Superior rooms, restaurant, pool, and concierge.' },
+      '5 Star Hotel': { min: 45000, max: 90000, note: '₹8,000-₹20,000/night. World-class luxury, spa, fine dining & butler service.' },
+      'Airbnb': { min: 10000, max: 20000, note: '₹1,500-₹3,500/night. Private homes & unique stays with full kitchen access.' },
+      'Hostel': { min: 6000, max: 12000, note: '₹400-₹1,200/night. Dorm beds, social atmosphere, perfect for solo travellers.' }
+    };
+
+    const accCost = accommodationCostMap[accType] || accommodationCostMap['3 Star Hotel'];
+    const totalMin = accCost.min + (numDays * 800);
+    const totalMax = accCost.max + (numDays * 1500);
+
+    const itineraryTemplates = [
+      { title: `Arrival in ${dest} & Local Exploration`, description: `Land at ${dest} and check into your ${accType}. Spend the evening exploring the iconic local market, sampling street food, and soaking in the atmosphere.`, tags: ['Arrival', 'Culture', 'Foodie'] },
+      { title: `Heritage & Nature Tour`, description: `Full-day guided tour of ${dest}'s most celebrated attractions. Visit historical monuments, garden parks, and local art galleries. Evening at leisure.`, tags: ['Heritage', 'Nature', 'Photography'] },
+      { title: `Adventure & Hidden Gems`, description: `Morning trek to a scenic viewpoint near ${dest}. Afternoon cafe-hopping in the bohemian quarter. Try local cuisine for dinner with live folk music.`, tags: ['Adventure', 'Local', 'Music'] },
+      { title: `Leisure & Wellness Day`, description: `Enjoy a relaxed morning. Optional spa treatment at your ${accType}. Afternoon boat ride or nature walk, ending with a rooftop sunset dinner.`, tags: ['Relaxation', 'Wellness', 'Scenic'] },
+      { title: `Departure Day`, description: `Early morning packing. Last-minute souvenir shopping from ${dest}'s artisan bazaars. Transfer to airport/station for your journey back to ${src}.`, tags: ['Shopping', 'Departure'] }
+    ];
+
+    const itinerary = [];
+    for (let i = 0; i < numDays; i++) {
+      itinerary.push(itineraryTemplates[i % itineraryTemplates.length]);
+    }
+
+    return {
+      totalEstimatedBudget: `₹${totalMin.toLocaleString('en-IN')} - ₹${totalMax.toLocaleString('en-IN')} per person`,
+      crowdStatus: ['Low', 'Moderate', 'High', 'Peak Season'][Math.floor(Math.random() * 4)],
+      accommodationType: accType,
+      accommodationNote: accCost.note,
+      aiTip: `For ${dest}, ${accType.toLowerCase()} options near the city center offer the best value. Book at least 3 weeks in advance during peak season for better rates.`,
+      itinerary,
+      comparison: {
+        flight: { price: '₹4,800 - ₹9,500', time: `~${Math.ceil(numDays * 0.4)}h flight` },
+        train: { price: '₹1,200 - ₹3,200', time: `~${Math.ceil(numDays * 3)}h train` },
+        bus: { price: '₹700 - ₹1,800', time: `~${Math.ceil(numDays * 4)}h bus` }
+      }
+    };
+  };
+
+  if (!apiKey || apiKey === 'PLACEHOLDER_API_KEY') {
+    return res.json(buildMock());
+  }
+
+  try {
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+    const prompt = `
+      You are an expert travel consultant for Indian travelers. Generate a detailed travel plan for a trip from "${source}" to "${destination}".
+      Duration: ${days} days and ${nights} nights.
+      Preferred Accommodation: ${accommodation || 'Standard Hotel'}.
+      
+      Return a JSON object with EXACTLY these keys (no markdown, no extra text):
+      {
+        "totalEstimatedBudget": "₹XX,XXX - ₹XX,XXX per person",
+        "crowdStatus": "Moderate",
+        "accommodationType": "${accommodation || 'Standard Hotel'}",
+        "accommodationNote": "Brief note about ideal accommodation options at this destination",
+        "aiTip": "2-sentence personalized advice for this route and accommodation choice",
+        "itinerary": [
+          { "title": "Day title", "description": "Full day activities", "tags": ["Tag1", "Tag2", "Tag3"] }
+        ],
+        "comparison": {
+          "flight": { "price": "₹X,XXX - ₹X,XXX", "time": "Xh Xm" },
+          "train": { "price": "₹X,XXX - ₹X,XXX", "time": "Xh Xm" },
+          "bus": { "price": "₹XXX - ₹X,XXX", "time": "Xh Xm" }
+        }
+      }
+      IMPORTANT: Return ONLY valid JSON. No markdown code blocks.
+    `;
+
+    const result = await model.generateContent(prompt);
+    const responseText = result.response.text();
+    const cleaned = responseText.replace(/```json|```/g, '').trim();
+    const aiJson = JSON.parse(cleaned);
+    res.json(aiJson);
+  } catch (err) {
+    console.error('AI Suggestions error:', err.message);
+    // Return smart mock on AI failure instead of erroring out
+    res.json(buildMock());
+  }
+});
+
+// Contact Us endpoints
+app.post('/api/contact', async (req, res) => {
+  const { name, email, phone, message } = req.body;
+  try {
+    const query = `
+            INSERT INTO contact_messages (name, email, phone, message)
+            VALUES ($1, $2, $3, $4)
+            RETURNING *
+        `;
+    const result = await pool.query(query, [name, email, phone, message]);
+    res.status(201).json({ message: 'Message sent successfully!', data: result.rows[0] });
+  } catch (err) {
+    console.error('Error saving contact message:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.get('/api/admin/contact-messages', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM contact_messages ORDER BY created_at DESC');
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Error fetching contact messages:', err);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -1280,6 +1454,15 @@ const bootstrap = async () => {
             refund_date TIMESTAMP,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
           );
+
+          CREATE TABLE IF NOT EXISTS contact_messages (
+            id SERIAL PRIMARY KEY,
+            name VARCHAR(150),
+            email VARCHAR(150),
+            phone VARCHAR(20),
+            message TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+          );
         `);
     console.log('Database bootstrapped with new schema');
   } catch (err) {
@@ -1287,7 +1470,7 @@ const bootstrap = async () => {
   }
 };
 
-app.listen(port, () => {
-  console.log(`Backend server running on http://localhost:${port}`);
+app.listen(port, '0.0.0.0', () => {
+  console.log(`Backend server running on port ${port} (Available on network)`);
   bootstrap();
 });

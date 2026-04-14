@@ -30,6 +30,96 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({ user, onClose, onSi
     const [bookingPassengers, setBookingPassengers] = useState<Record<number, any[]>>({});
     const [expandedBookingId, setExpandedBookingId] = useState<number | null>(null);
     const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+    const [isCameraActive, setIsCameraActive] = useState(false);
+    const [stream, setStream] = useState<MediaStream | null>(null);
+    const [flash, setFlash] = useState(false);
+    const videoRef = React.useRef<HTMLVideoElement>(null);
+    const canvasRef = React.useRef<HTMLCanvasElement>(null);
+
+    const startCamera = async () => {
+        try {
+            const mediaStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+            setStream(mediaStream);
+            setIsCameraActive(true);
+        } catch (err) {
+            console.error("Error accessing camera:", err);
+            alert("Could not access camera. Please check permissions.");
+        }
+    };
+
+    const stopCamera = () => {
+        if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+            setStream(null);
+        }
+        setIsCameraActive(false);
+    };
+
+    const captureImage = async () => {
+        if (videoRef.current && canvasRef.current) {
+            setFlash(true);
+            setTimeout(() => setFlash(false), 150);
+
+            const context = canvasRef.current.getContext('2d');
+            if (context) {
+                // Ensure video is ready before drawing
+                canvasRef.current.width = videoRef.current.videoWidth || 640;
+                canvasRef.current.height = videoRef.current.videoHeight || 480;
+                context.drawImage(videoRef.current, 0, 0);
+                const dataUrl = canvasRef.current.toDataURL('image/jpeg', 0.85);
+                await uploadAvatar(dataUrl);
+                stopCamera();
+            }
+        }
+    };
+
+    useEffect(() => {
+        if (isCameraActive && stream && videoRef.current) {
+            videoRef.current.srcObject = stream;
+            // Ensure video starts playing
+            videoRef.current.play().catch(e => console.warn("Auto-play blocked:", e));
+        }
+        return () => {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+            }
+        };
+    }, [isCameraActive, stream]);
+
+    const uploadAvatar = async (base64String: string) => {
+        setIsUploadingAvatar(true);
+        try {
+            const res = await fetch(`/api/users/${user.id}/avatar`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ avatar: base64String })
+            });
+
+            if (res.ok) {
+                const updatedData = await res.json();
+                setAccountDetails(prev => ({ ...prev, avatar: updatedData.avatar }));
+                if (onAccountUpdate) {
+                    onAccountUpdate({ ...user, avatar: updatedData.avatar });
+                }
+            } else {
+                console.warn('Backend avatar update failed, falling back to local state.');
+                setAccountDetails(prev => ({ ...prev, avatar: base64String }));
+                storageService.updateCustomer(user.email, { avatar: base64String });
+                if (onAccountUpdate) {
+                    onAccountUpdate({ ...user, avatar: base64String });
+                }
+            }
+        } catch (err) {
+            console.warn("Avatar upload network error, falling back to local state:", err);
+            setAccountDetails(prev => ({ ...prev, avatar: base64String }));
+            storageService.updateCustomer(user.email, { avatar: base64String });
+            if (onAccountUpdate) {
+                onAccountUpdate({ ...user, avatar: base64String });
+            }
+        } finally {
+            setIsUploadingAvatar(false);
+        }
+    };
 
     const toggleBookingPassengers = async (bookingId: number) => {
         if (expandedBookingId === bookingId) {
@@ -57,38 +147,7 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({ user, onClose, onSi
         const reader = new FileReader();
         reader.onloadend = async () => {
             const base64String = reader.result as string;
-            setIsUploadingAvatar(true);
-            try {
-                const res = await fetch(`/api/users/${user.id}/avatar`, {
-                    method: 'PATCH',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ avatar: base64String })
-                });
-
-                if (res.ok) {
-                    const updatedData = await res.json();
-                    setAccountDetails(prev => ({ ...prev, avatar: updatedData.avatar }));
-                    if (onAccountUpdate) {
-                        onAccountUpdate({ ...user, avatar: updatedData.avatar });
-                    }
-                } else {
-                    console.warn('Backend avatar update failed, falling back to local state.');
-                    setAccountDetails(prev => ({ ...prev, avatar: base64String }));
-                    storageService.updateCustomer(user.email, { avatar: base64String });
-                    if (onAccountUpdate) {
-                        onAccountUpdate({ ...user, avatar: base64String });
-                    }
-                }
-            } catch (err) {
-                console.warn("Avatar upload network error, falling back to local state:", err);
-                setAccountDetails(prev => ({ ...prev, avatar: base64String }));
-                storageService.updateCustomer(user.email, { avatar: base64String });
-                if (onAccountUpdate) {
-                    onAccountUpdate({ ...user, avatar: base64String });
-                }
-            } finally {
-                setIsUploadingAvatar(false);
-            }
+            await uploadAvatar(base64String);
         };
         reader.readAsDataURL(file);
     };
@@ -234,38 +293,119 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({ user, onClose, onSi
     }, [showPromo, user.id, user.promoCode, user, onAccountUpdate]);
 
     return (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-slate-950/90 backdrop-blur-xl">
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-2 sm:p-6 bg-slate-950/90 backdrop-blur-xl">
             <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-30">
                 <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_50%_0%,#6366f1_0%,transparent_50%)]"></div>
             </div>
 
-            <div className="relative w-full max-w-lg bg-slate-900 border border-white/5 rounded-[40px] shadow-2xl backdrop-blur-3xl animate-in zoom-in-95 duration-500 max-h-[90vh] flex flex-col overflow-hidden">
+            <div className="relative w-full max-w-lg bg-slate-900 border border-white/5 rounded-[30px] sm:rounded-[40px] shadow-2xl backdrop-blur-3xl animate-in zoom-in-95 duration-500 max-h-[95vh] sm:max-h-[90vh] flex flex-col overflow-hidden">
                 {/* Header - Fixed */}
-                <div className="p-6 md:p-10 pb-4 md:pb-6 flex justify-between items-start shrink-0">
-                    <div className="flex items-center gap-4">
-                        <div className={`w-16 h-16 rounded-2xl overflow-hidden shadow-2xl border-2 border-indigo-500 relative group ${isUploadingAvatar ? 'opacity-50 blur-sm' : ''} transition-all`}>
-                            <img src={accountDetails.avatar || user.avatar || `https://ui-avatars.com/api/?name=${user.name}&background=6366f1&color=fff`} alt={user.name} className="w-full h-full object-cover" />
-                            <label className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity">
+                <div className="relative p-5 sm:p-8 md:p-10 flex flex-col sm:flex-row items-center sm:items-center gap-6 sm:gap-8 border-b border-white/5 bg-white/2">
+                    {/* Close Button - Absolute positioning for mobile to save horizontal space */}
+                    <button
+                        onClick={onClose}
+                        className="absolute top-4 right-4 sm:hidden p-2 text-white/50 hover:text-white bg-white/10 rounded-xl"
+                    >
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+
+                    <div className="flex items-center gap-4 sm:gap-6 shrink-0">
+                        {/* Avatar Box */}
+                        <div
+                            onClick={startCamera}
+                            className={`shrink-0 w-16 h-16 sm:w-20 sm:h-20 rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl border-2 border-indigo-500/30 relative cursor-pointer hover:border-indigo-500 transition-all ${isUploadingAvatar ? 'opacity-50 blur-sm' : ''} group/avatar`}
+                        >
+                            <img src={accountDetails.avatar || user.avatar || `https://ui-avatars.com/api/?name=${user.name}&background=6366f1&color=fff`} alt={user.name} className="w-full h-full object-cover transition-transform duration-500 group-hover/avatar:scale-110" />
+                            <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover/avatar:opacity-100 transition-opacity">
                                 <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                            </div>
+                        </div>
+
+                        {/* Buttons Stack Beside Photo */}
+                        <div className="flex flex-col gap-1.5 sm:gap-2">
+                            <button
+                                onClick={(e) => { e.preventDefault(); startCamera(); }}
+                                className="flex items-center gap-2 sm:gap-3 px-2 sm:px-3 py-1.5 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20 rounded-xl transition-all group/btn active:scale-95"
+                            >
+                                <div className="p-1 bg-indigo-500 rounded-md group-hover/btn:bg-indigo-400">
+                                    <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><circle cx="12" cy="13" r="3" strokeWidth={2} /></svg>
+                                </div>
+                                <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-[0.2em] text-white/50 group-hover/btn:text-white">Capture</span>
+                            </button>
+                            <label className="flex items-center gap-2 sm:gap-3 px-2 sm:px-3 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 rounded-xl transition-all group/btn cursor-pointer active:scale-95">
+                                <div className="p-1 bg-emerald-500 rounded-md group-hover/btn:bg-emerald-400">
+                                    <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                                </div>
+                                <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-[0.2em] text-white/50 group-hover/btn:text-white">Import</span>
                                 <input type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} disabled={isUploadingAvatar} />
                             </label>
                         </div>
-                        <div>
-                            <h2 className="text-2xl font-black text-white tracking-tight uppercase">{user.name}</h2>
-                            <p className="text-white/40 text-sm font-bold uppercase tracking-widest mt-1">
-                                {user.role === 'associate' ? 'TripFlux Associate' : user.role === 'admin' ? 'System Administrator' : 'TripFlux User'}
-                            </p>
-                        </div>
                     </div>
-                    <button onClick={onClose} className="p-2.5 text-white/50 hover:text-white transition-all duration-200 bg-white/10 hover:bg-white/20 rounded-xl border border-white/10 group shadow-lg" title="Close">
+
+                    {/* Name/Role Info - Fluid Header */}
+                    <div className="flex-1 min-w-0 w-full text-center sm:text-left sm:pl-8 sm:border-l border-white/10">
+                        <h2 className="text-xl sm:text-lg md:text-2xl font-black text-white tracking-tight uppercase leading-tight break-all sm:break-words">
+                            {user.name}
+                        </h2>
+                        <p className="text-white/40 text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.2em] mt-2">
+                            {user.role === 'associate' ? 'TripFlux Associate' : user.role === 'admin' ? 'TripFlux Admin' : 'TripFlux User'}
+                        </p>
+                    </div>
+
+                    {/* Desktop Close Button */}
+                    <button
+                        onClick={onClose}
+                        className="hidden sm:block p-2.5 text-white/50 hover:text-white transition-all duration-200 bg-white/10 hover:bg-white/20 rounded-xl border border-white/10 group shadow-lg shrink-0"
+                        title="Close"
+                    >
                         <svg className="w-5 h-5 transform group-hover:rotate-90 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
                         </svg>
                     </button>
                 </div>
 
+                {/* Camera Overlay */}
+                {isCameraActive && (
+                    <div className="absolute inset-0 z-50 bg-slate-900 flex flex-col items-center justify-center p-6 animate-in fade-in duration-300">
+                        <div className="relative w-full max-w-sm aspect-square bg-black rounded-3xl overflow-hidden border-2 border-indigo-500/50 shadow-2xl">
+                            <video
+                                ref={videoRef}
+                                autoPlay
+                                playsInline
+                                className={`w-full h-full object-cover transition-all duration-300 ${flash ? 'brightness-150' : 'brightness-100'}`}
+                            />
+                            {flash && <div className="absolute inset-0 bg-white/40 animate-out fade-out duration-150 pointer-events-none" />}
+                            <div className="absolute bottom-6 left-0 w-full flex justify-center gap-4">
+                                <button
+                                    onClick={captureImage}
+                                    className="p-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-full shadow-lg shadow-indigo-500/40 transition-all border-4 border-white/20 active:scale-95"
+                                    title="Capture"
+                                >
+                                    <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    </svg>
+                                </button>
+                                <button
+                                    onClick={stopCamera}
+                                    className="p-4 bg-red-500/80 hover:bg-red-500 text-white rounded-full shadow-lg transition-all border-4 border-white/10 active:scale-95"
+                                    title="Cancel"
+                                >
+                                    <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                        <canvas ref={canvasRef} className="hidden" />
+                        <p className="mt-6 text-white/50 text-xs font-black uppercase tracking-[0.2em]">Position yourself in the frame</p>
+                    </div>
+                )}
+
                 {/* Main Body - Scrollable */}
-                <div className="flex-1 overflow-y-auto px-6 md:px-10 pb-6 md:pb-10 custom-scrollbar">
+                <div className="flex-1 overflow-y-auto px-4 sm:px-10 pb-6 md:pb-10 custom-scrollbar">
                     <div className="space-y-6">
                         <div className="bg-white/5 border border-white/10 rounded-3xl p-6">
                             <label className="text-[10px] font-black text-white/30 uppercase tracking-widest">Email / Contact</label>
@@ -576,7 +716,7 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({ user, onClose, onSi
                     </div>
                 </div>
             </div>
-        </div>
+        </div >
     );
 };
 

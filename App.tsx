@@ -13,9 +13,10 @@ import { AppStatus, TourPackage, User } from './types';
 import { dbService } from './services/dbService';
 import SignupPage from './components/SignupPage';
 import ProfileDashboard from './components/ProfileDashboard';
+import AISuggestions from './components/AISuggestions';
 
 
-type ViewType = 'HOME' | 'INTERNATIONAL' | 'DOMESTIC' | 'PILGRIMAGE' | 'ABOUT' | 'CONTACT' | 'TOUR_DETAILS' | 'SIGNUP';
+type ViewType = 'HOME' | 'INTERNATIONAL' | 'DOMESTIC' | 'PILGRIMAGE' | 'ABOUT' | 'CONTACT' | 'TOUR_DETAILS' | 'SIGNUP' | 'AI_SUGGESTIONS';
 
 // Added missing highlights property to all objects in DEFAULT_TOURS to satisfy the TourPackage interface
 const DEFAULT_TOURS: TourPackage[] = [
@@ -1835,7 +1836,6 @@ const App: React.FC = () => {
       const saved = localStorage.getItem('tripflux_user');
       if (saved) {
         const parsed = JSON.parse(saved);
-        // Only auto-login to admin if hash is #admin, otherwise stay in IDLE (Home)
         if (parsed.role === 'admin' && window.location.hash === '#admin') return AppStatus.ADMIN;
       }
     } catch (e) { }
@@ -1850,18 +1850,68 @@ const App: React.FC = () => {
     }
   });
   const [currentView, setCurrentView] = useState<ViewType>(() => {
-    // Check if we have a referral link
     const params = new URLSearchParams(window.location.search);
     if (window.location.href.includes('ref=')) return 'SIGNUP';
-
-    try {
-      const saved = localStorage.getItem('tripflux_user');
-      // Default to HOME for all users to allow guest browsing
-      return 'HOME';
-    } catch (e) {
-      return 'HOME';
-    }
+    const hash = window.location.hash.replace('#', '').toUpperCase();
+    const validViews: ViewType[] = ['HOME', 'INTERNATIONAL', 'DOMESTIC', 'PILGRIMAGE', 'ABOUT', 'CONTACT', 'TOUR_DETAILS', 'SIGNUP'];
+    if (validViews.includes(hash as any)) return hash as ViewType;
+    return 'HOME';
   });
+
+  const [signatureTours, setSignatureTours] = useState<TourPackage[]>([]);
+  const [selectedTour, setSelectedTour] = useState<TourPackage | null>(null);
+  const [isToursLoading, setIsToursLoading] = useState(true);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [activeHero, setActiveHero] = useState(0);
+
+  // Centralized navigation handler with history support
+  const changeView = (view: ViewType, tour: TourPackage | null = null, replace = false) => {
+    setCurrentView(view);
+    if (tour) setSelectedTour(tour);
+
+    // Ensure modals are closed when navigating between main views
+    setShowProfile(false);
+    setShowLoginModal(false);
+
+    const state = { view, tourId: tour?.id };
+    const url = view === 'HOME' ? '/' : `#${view.toLowerCase()}`;
+
+    if (replace) {
+      window.history.replaceState(state, '', url);
+    } else {
+      // Clear isBase if we are pushing a new non-base state
+      window.history.pushState(state, '', url);
+    }
+    window.scrollTo(0, 0);
+  };
+
+  const handleOpenProfile = () => {
+    setShowProfile(true);
+    window.history.pushState({ modal: 'PROFILE', view: currentView }, '', '#profile');
+  };
+
+  const handleOpenLogin = () => {
+    setShowLoginModal(true);
+    window.history.pushState({ modal: 'LOGIN', view: currentView }, '', '#login');
+  };
+
+  const handleCloseModal = () => {
+    if (window.location.hash === '#profile' || window.location.hash === '#login') {
+      // If we're on the initial entry state, history.back() will close the site.
+      // We check for isBase flag we set during initialization.
+      if (window.history.state?.isBase) {
+        setShowProfile(false);
+        setShowLoginModal(false);
+        // Clear the hash without pushing to history
+        window.history.replaceState({ view: currentView, isBase: true }, '', '/');
+      } else {
+        window.history.back();
+      }
+    } else {
+      setShowProfile(false);
+      setShowLoginModal(false);
+    }
+  };
 
   // Persist user session
   useEffect(() => {
@@ -1871,6 +1921,58 @@ const App: React.FC = () => {
       localStorage.removeItem('tripflux_user');
     }
   }, [user]);
+
+  // Consolidated state and modal synchronization with browser history
+  useEffect(() => {
+    const handlePopState = (event: PopStateEvent) => {
+      const hash = window.location.hash;
+
+      // Handle Modals via URL hash
+      setShowProfile(hash === '#profile');
+      setShowLoginModal(hash === '#login');
+
+      // Handle View and Tour state via history state or hash fallback
+      if (event.state && event.state.view) {
+        setCurrentView(event.state.view);
+        if (event.state.tourId) {
+          const tour = signatureTours.find(t => t.id === event.state.tourId) || DEFAULT_TOURS.find(t => t.id === event.state.tourId);
+          if (tour) setSelectedTour(tour);
+        }
+      } else {
+        const viewHash = hash.replace('#', '').toUpperCase();
+        const validViews: ViewType[] = ['HOME', 'INTERNATIONAL', 'DOMESTIC', 'PILGRIMAGE', 'ABOUT', 'CONTACT', 'TOUR_DETAILS', 'SIGNUP'];
+
+        if (validViews.includes(viewHash as any)) {
+          setCurrentView(viewHash as ViewType);
+        } else if (!hash || hash === '' || hash === '#profile' || hash === '#login') {
+          // Default to home if no valid view in hash and we're not in a modal-only hash
+          if (hash === '' || !hash) {
+            setCurrentView('HOME');
+          }
+        }
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+
+    // Ensure initial history state is set for the landing page
+    if (!window.history.state) {
+      window.history.replaceState({ view: currentView, tourId: selectedTour?.id, isBase: true }, '', window.location.hash || '/');
+    }
+
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [signatureTours, currentView, selectedTour]);
+
+  // Handle initial page load with hash-based modals
+  useEffect(() => {
+    const hash = window.location.hash;
+    if (hash === '#profile') {
+      setShowProfile(true);
+    } else if (hash === '#login') {
+      setShowLoginModal(true);
+    }
+  }, []);
+
 
   // Session validation: fix stale localStorage IDs (timestamp-based fallback IDs)
   useEffect(() => {
@@ -1932,16 +2034,12 @@ const App: React.FC = () => {
       if (user.role === 'admin') {
         setStatus(AppStatus.ADMIN);
       } else {
-        setCurrentView('HOME');
+        changeView('HOME', null, true);
       }
     }
   }, [user, currentView, status]);
 
-  const [signatureTours, setSignatureTours] = useState<TourPackage[]>([]);
-  const [selectedTour, setSelectedTour] = useState<TourPackage | null>(null);
-  const [isToursLoading, setIsToursLoading] = useState(true);
-  const [showLoginModal, setShowLoginModal] = useState(false);
-  const [activeHero, setActiveHero] = useState(0);
+
   const heroImages = [
     '/assets/images/wing-plane-left.jpg',
     '/assets/images/train_fast_2.jpg',
@@ -1958,9 +2056,7 @@ const App: React.FC = () => {
 
 
   const handleTourSelect = (tour: TourPackage) => {
-    setSelectedTour(tour);
-    setCurrentView('TOUR_DETAILS');
-    window.scrollTo(0, 0);
+    changeView('TOUR_DETAILS', tour);
   };
 
   const contactPhone = "8297788789";
@@ -1992,7 +2088,7 @@ const App: React.FC = () => {
       setStatus(AppStatus.ADMIN);
     } else {
       if (currentView === 'SIGNUP') {
-        setCurrentView('HOME');
+        changeView('HOME', null, true);
       }
     }
   };
@@ -2056,13 +2152,13 @@ const App: React.FC = () => {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center pt-8 animate-in fade-in slide-in-from-bottom-16 duration-1200 delay-500 w-full sm:w-auto">
               <button
-                onClick={() => setCurrentView('INTERNATIONAL')}
+                onClick={() => changeView('INTERNATIONAL')}
                 className="px-8 md:px-10 py-4 bg-white text-[#0c2d3a] rounded-2xl font-black uppercase text-[10px] md:text-xs tracking-widest hover:bg-indigo-50 transition-all shadow-2xl hover:scale-105"
               >
                 International Tours
               </button>
               <button
-                onClick={() => setCurrentView('PILGRIMAGE')}
+                onClick={() => changeView('PILGRIMAGE')}
                 className="px-8 md:px-10 py-4 bg-indigo-600 text-white rounded-2xl font-black uppercase text-[10px] md:text-xs tracking-widest hover:bg-indigo-700 transition-all shadow-2xl hover:scale-105"
               >
                 Temple Specials
@@ -2077,7 +2173,7 @@ const App: React.FC = () => {
             <button
               key={idx}
               onClick={() => setActiveHero(idx)}
-              className={`w-12 h-1.5 rounded-full transition-all duration-500 ${activeHero === idx ? 'bg-white shadow-[0_0_15px_rgba(255,255,255,0.8)]' : 'bg-white/30 hover:bg-white/50'}`}
+              className={`w-8 h-[2px] !min-h-0 transition-all duration-500 ${activeHero === idx ? 'bg-white shadow-[0_0_8px_rgba(255,255,255,0.8)]' : 'bg-white/30 hover:bg-white/50'}`}
             ></button>
           ))}
         </div>
@@ -2095,7 +2191,7 @@ const App: React.FC = () => {
           {getToursByCategory('Pilgrimage').slice(0, 3).map(tour => <TourCard key={tour.id} tour={tour} onSelect={handleTourSelect} />)}
         </div>
         <div className="mt-6 text-center">
-          <button onClick={() => setCurrentView('PILGRIMAGE')} className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest hover:underline">View more »</button>
+          <button onClick={() => changeView('PILGRIMAGE')} className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest hover:underline">View more »</button>
         </div>
       </section>
 
@@ -2109,7 +2205,7 @@ const App: React.FC = () => {
           {getToursByCategory('International').slice(0, 3).map(tour => <TourCard key={tour.id} tour={tour} onSelect={handleTourSelect} />)}
         </div>
         <div className="mt-6 text-center">
-          <button onClick={() => setCurrentView('INTERNATIONAL')} className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest hover:underline">View more »</button>
+          <button onClick={() => changeView('INTERNATIONAL')} className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest hover:underline">View more »</button>
         </div>
       </section>
 
@@ -2123,7 +2219,7 @@ const App: React.FC = () => {
           {getToursByCategory('Domestic').slice(0, 3).map(tour => <TourCard key={tour.id} tour={tour} onSelect={handleTourSelect} />)}
         </div>
         <div className="mt-6 text-center">
-          <button onClick={() => setCurrentView('DOMESTIC')} className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest hover:underline">View more »</button>
+          <button onClick={() => changeView('DOMESTIC')} className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest hover:underline">View more »</button>
         </div>
       </section>
 
@@ -2179,13 +2275,13 @@ const App: React.FC = () => {
 
           <Header
             user={user}
-            onLogout={() => { setUser(null); }}
-            onSignIn={() => { setShowLoginModal(true); }}
-            onViewChange={(view) => { setCurrentView(view); window.scrollTo(0, 0); }}
+            onLogout={() => { setUser(null); changeView('HOME', null, true); }}
+            onSignIn={handleOpenLogin}
+            onViewChange={(view) => changeView(view)}
             onAdminClick={() => { window.location.hash = 'admin'; setStatus(AppStatus.ADMIN_LOGIN); }}
-            onAssociateLogin={() => { setShowLoginModal(true); }}
+            onAssociateLogin={handleOpenLogin}
             currentView={currentView}
-            onProfileClick={() => setShowProfile(true)}
+            onProfileClick={handleOpenProfile}
             onGoToDashboard={() => { window.location.hash = 'admin'; setStatus(AppStatus.ADMIN); }}
             isMenuOpen={isMenuOpen}
             setIsMenuOpen={setIsMenuOpen}
@@ -2198,12 +2294,12 @@ const App: React.FC = () => {
       ) : status === AppStatus.ASSOCIATE_LOGIN ? (
         <AssociateLogin onSuccess={() => setStatus(AppStatus.IDLE)} onCancel={() => setStatus(AppStatus.IDLE)} />
       ) : status === AppStatus.ADMIN ? (
-        <AdminDashboard onClose={() => { window.location.hash = ''; setStatus(AppStatus.IDLE); setCurrentView('HOME'); }} onLogout={() => { window.location.hash = ''; setStatus(AppStatus.IDLE); setUser(null); setCurrentView('SIGNUP'); localStorage.removeItem('tripflux_user'); }} />
+        <AdminDashboard onClose={() => { window.location.hash = ''; setStatus(AppStatus.IDLE); changeView('HOME', null, true); }} onLogout={() => { window.location.hash = ''; setStatus(AppStatus.IDLE); setUser(null); changeView('SIGNUP', null, true); localStorage.removeItem('tripflux_user'); }} />
       ) : (
         currentView === 'SIGNUP' ? (
-          <SignupPage onBack={() => setCurrentView('HOME')} onAuthSuccess={handleAuthSuccess} />
+          <SignupPage onBack={() => changeView('HOME')} onAuthSuccess={handleAuthSuccess} />
         ) : currentView === 'TOUR_DETAILS' && selectedTour ? (
-          <TourDetails tour={selectedTour} user={user} onBack={() => setCurrentView('INTERNATIONAL')} onRequireLogin={() => setShowLoginModal(true)} />
+          <TourDetails tour={selectedTour} user={user} onBack={() => changeView('INTERNATIONAL')} onRequireLogin={() => setShowLoginModal(true)} />
         ) : (
           <main className="min-h-screen bg-white">
             {currentView === 'HOME' && renderHome()}
@@ -2212,7 +2308,8 @@ const App: React.FC = () => {
             {currentView === 'PILGRIMAGE' && renderCategoryPage('Temple Special Packages', getToursByCategory('Pilgrimage'))}
             {currentView === 'ABOUT' && <AboutUs />}
             {currentView === 'CONTACT' && <ContactUs />}
-            {currentView === 'SIGNUP' && <SignupPage onBack={() => setCurrentView('HOME')} onAuthSuccess={handleAuthSuccess} />}
+            {currentView === 'AI_SUGGESTIONS' && <AISuggestions />}
+            {currentView === 'SIGNUP' && <SignupPage onBack={() => changeView('HOME')} onAuthSuccess={handleAuthSuccess} />}
 
             <footer className="bg-[#0c2d3a] text-white pt-10 sm:pt-16 pb-24 md:pb-12 px-4 sm:px-6 border-t border-white/5 mt-8 sm:mt-12">
               <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8 sm:gap-12">
@@ -2225,24 +2322,24 @@ const App: React.FC = () => {
                 <div>
                   <h4 className="text-[11px] font-extrabold uppercase tracking-widest mb-6 border-b border-white/10 pb-2">International Packages</h4>
                   <ul className="text-[10px] text-white/50 space-y-2 font-bold cursor-pointer">
-                    <li onClick={() => setCurrentView('INTERNATIONAL')}>» EUROPE SPL</li>
-                    <li onClick={() => setCurrentView('INTERNATIONAL')}>» Maldives</li>
-                    <li onClick={() => setCurrentView('INTERNATIONAL')}>» Singapore & Malaysia</li>
-                    <li onClick={() => setCurrentView('INTERNATIONAL')}>» Bangkok - Phuket</li>
-                    <li onClick={() => setCurrentView('INTERNATIONAL')}>» Srilanka</li>
-                    <li onClick={() => setCurrentView('INTERNATIONAL')}>» Dubai</li>
-                    <li onClick={() => setCurrentView('INTERNATIONAL')}>» Bali</li>
+                    <li onClick={() => changeView('INTERNATIONAL')}>» EUROPE SPL</li>
+                    <li onClick={() => changeView('INTERNATIONAL')}>» Maldives</li>
+                    <li onClick={() => changeView('INTERNATIONAL')}>» Singapore & Malaysia</li>
+                    <li onClick={() => changeView('INTERNATIONAL')}>» Bangkok - Phuket</li>
+                    <li onClick={() => changeView('INTERNATIONAL')}>» Srilanka</li>
+                    <li onClick={() => changeView('INTERNATIONAL')}>» Dubai</li>
+                    <li onClick={() => changeView('INTERNATIONAL')}>» Bali</li>
                   </ul>
                 </div>
                 <div>
                   <h4 className="text-[11px] font-extrabold uppercase tracking-widest mb-6 border-b border-white/10 pb-2">Domestic Packages</h4>
                   <ul className="text-[10px] text-white/50 space-y-2 font-bold cursor-pointer">
-                    <li onClick={() => setCurrentView('DOMESTIC')}>» Kashi</li>
-                    <li onClick={() => setCurrentView('DOMESTIC')}>» North India</li>
-                    <li onClick={() => setCurrentView('DOMESTIC')}>» Rajasthan</li>
-                    <li onClick={() => setCurrentView('DOMESTIC')}>» Chardham</li>
-                    <li onClick={() => setCurrentView('DOMESTIC')}>» Gujarat</li>
-                    <li onClick={() => setCurrentView('DOMESTIC')}>» Tamilnadu</li>
+                    <li onClick={() => changeView('DOMESTIC')}>» Kashi</li>
+                    <li onClick={() => changeView('DOMESTIC')}>» North India</li>
+                    <li onClick={() => changeView('DOMESTIC')}>» Rajasthan</li>
+                    <li onClick={() => changeView('DOMESTIC')}>» Chardham</li>
+                    <li onClick={() => changeView('DOMESTIC')}>» Gujarat</li>
+                    <li onClick={() => changeView('DOMESTIC')}>» Tamilnadu</li>
                   </ul>
                 </div>
                 <div>
@@ -2270,26 +2367,26 @@ const App: React.FC = () => {
         )
       )}
 
-      {showProfile && user && <ProfileDashboard user={user} onClose={() => setShowProfile(false)} onSignOut={() => { setShowProfile(false); setUser(null); setCurrentView('HOME'); }} onAccountUpdate={(updatedUser) => setUser(updatedUser)} />}
+      {showProfile && user && <ProfileDashboard user={user} onClose={handleCloseModal} onSignOut={() => { setShowProfile(false); setUser(null); changeView('HOME', null, true); }} onAccountUpdate={(updatedUser) => setUser(updatedUser)} />}
 
       {showLoginModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <div className="relative w-full max-w-xl max-h-[90vh] overflow-y-auto rounded-3xl md:rounded-[40px] shadow-2xl custom-scrollbar" style={{ backgroundColor: '#0c2d3a' }}>
             <button
-              onClick={() => setShowLoginModal(false)}
+              onClick={handleCloseModal}
               className="absolute top-6 right-6 p-2 text-white/50 hover:text-white transition-colors z-50 bg-black/20 rounded-full"
             >
               <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
-            <SignupPage onBack={() => setShowLoginModal(false)} onAuthSuccess={handleAuthSuccess} isModal={true} />
+            <SignupPage onBack={handleCloseModal} onAuthSuccess={handleAuthSuccess} isModal={true} />
           </div>
         </div>
       )}
 
       <AuthModal isOpen={false} onClose={() => { }} onAuthSuccess={handleAuthSuccess} />
-      <MobileNav onHome={() => setCurrentView('HOME')} onAdminClick={() => { window.location.hash = 'admin'; setStatus(AppStatus.ADMIN_LOGIN); }} currentView={currentView} onViewChange={(view) => { setCurrentView(view as any); window.scrollTo(0, 0); }} />
+      <MobileNav onHome={() => changeView('HOME')} onAdminClick={() => { window.location.hash = 'admin'; setStatus(AppStatus.ADMIN_LOGIN); }} currentView={currentView} onViewChange={(view) => changeView(view as any)} />
     </div>
   );
 };

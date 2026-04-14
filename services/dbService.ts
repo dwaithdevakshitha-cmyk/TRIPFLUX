@@ -98,26 +98,28 @@ export const dbService = {
 
   async createPackageAdmin(pkg: any) {
     return await executeSql(
-      "INSERT INTO packages (name, destination, duration, price, description, category, image, status, itinerary, location, track) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)",
+      "INSERT INTO packages (name, destination, duration, price, description, category, image, status, itinerary, location, track, features) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)",
       [
         pkg.name, pkg.destination, pkg.duration, pkg.price, pkg.description || '',
         pkg.category, pkg.image, pkg.status || 'active',
         JSON.stringify(pkg.itinerary || []),
         pkg.location || '',
-        pkg.track || ''
+        pkg.track || '',
+        JSON.stringify(pkg.features || [])
       ]
     );
   },
 
   async updatePackageAdmin(pkg: any) {
     return await executeSql(
-      "UPDATE packages SET name=$1, destination=$2, duration=$3, price=$4, description=$5, category=$6, image=$7, status=$8, itinerary=$9, location=$10, track=$11 WHERE package_id=$12",
+      "UPDATE packages SET name=$1, destination=$2, duration=$3, price=$4, description=$5, category=$6, image=$7, status=$8, itinerary=$9, location=$10, track=$11, features=$12 WHERE package_id=$13",
       [
         pkg.name, pkg.destination, pkg.duration, pkg.price, pkg.description || '',
         pkg.category, pkg.image, pkg.status,
         JSON.stringify(pkg.itinerary || []),
         pkg.location || '',
         pkg.track || '',
+        JSON.stringify(pkg.features || []),
         pkg.package_id
       ]
     );
@@ -384,5 +386,26 @@ export const dbService = {
       console.error("Fetch packages failed, returning empty list", err);
       return [];
     }
+  },
+
+  async submitContactForm(data: { name: string; email: string; phone: string; message: string }) {
+    const response = await fetch(`${BASE_URL}/api/contact`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    if (!response.ok) {
+      const error = await safeJson(response);
+      throw new Error(error.error || 'Failed to send message');
+    }
+    return await response.json();
+  },
+
+  async getContactMessages() {
+    const response = await fetch(`${BASE_URL}/api/admin/contact-messages`);
+    if (!response.ok) {
+      throw new Error('Failed to fetch contact messages');
+    }
+    return await response.json();
   }
 };

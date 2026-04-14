@@ -24,7 +24,7 @@ const SignUp: React.FC<SignUpProps> = ({ onBack, onSuccess }) => {
     const [phoneError, setPhoneError] = useState('');
 
     const validateEmail = (email: string) => {
-        const emailRegex = /^[a-zA-Z0-9_]+(\.[a-zA-Z0-9_]+)*@[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)+$/;
+        const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/;
         if (!email) return 'Email is required';
         if (email.includes(' ')) return 'Spaces are not allowed in email';
         if (!email.includes('@')) return 'Email must contain @ symbol';
@@ -225,7 +225,6 @@ const SignUp: React.FC<SignUpProps> = ({ onBack, onSuccess }) => {
                                     <input
                                         type="text"
                                         maxLength={10}
-                                        pattern="\d{10}"
                                         placeholder="10 digit number"
                                         className="w-full px-6 py-4 bg-slate-50 border-2 border-slate-50 rounded-2xl focus:bg-white focus:border-indigo-600 focus:outline-none transition-all font-bold text-slate-700"
                                         value={formData.phoneNumber}

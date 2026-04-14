@@ -35,18 +35,8 @@ class LocationTrackingService {
 
         const locations = this.getAllLocations();
 
-        // Check if this exact location already exists (same tour, same day)
-        const existingIndex = locations.findIndex(
-            loc => loc.tourId === location.tourId && loc.dayNumber === location.dayNumber
-        );
-
-        if (existingIndex !== -1) {
-            // Update existing location
-            locations[existingIndex] = newLocation;
-        } else {
-            // Add new location
-            locations.push(newLocation);
-        }
+        // Always add new location to keep history
+        locations.push(newLocation);
 
         this.saveLocations(locations);
         return newLocation;
